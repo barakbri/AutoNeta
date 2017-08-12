@@ -4,8 +4,7 @@ library(shiny)
 
 shinyUI(fluidPage(
   
-
-  titlePanel("SaDaT - Semi-automated Data Transformation Manager"),
+  titlePanel("AutoNeta - Semi-automatic Data Transformation Manager"),
   
   sidebarLayout(
     sidebarPanel(
@@ -26,7 +25,8 @@ shinyUI(fluidPage(
         fluidRow(column(12,selectInput('ui_list_After', 'After:', NULL, multiple=TRUE, selectize=FALSE)))
         ),
       
-      verbatimTextOutput("StatusLine")
+      verbatimTextOutput("StatusLine"),
+      htmlOutput("button_Apply")
     ),
     
     mainPanel(
@@ -34,14 +34,14 @@ shinyUI(fluidPage(
       fluidPage(
         #fluidRow(plotOutput("output_Graph_1"))
         fluidRow(
-                 column(4,plotOutput("output_Graph_1",height = "300px")),
-                 column(4,plotOutput("output_Graph_2",height = "300px")),
-                 column(4,plotOutput("output_Graph_3",height = "300px"))
+                 column(4,plotOutput("output_Graph_1",height = "300px",click = "click_Graph_1")),
+                 column(4,plotOutput("output_Graph_2",height = "300px",click = "click_Graph_2")),
+                 column(4,plotOutput("output_Graph_3",height = "300px",click = "click_Graph_3"))
                 ),
         fluidRow(
-                 column(4,plotOutput("output_Graph_4",height = "300px")),
-                 column(4,plotOutput("output_Graph_5",height = "300px")),
-                 column(4,plotOutput("output_Graph_6",height = "300px"))
+                 column(4,plotOutput("output_Graph_4",height = "300px",click = "click_Graph_4")),
+                 column(4,plotOutput("output_Graph_5",height = "300px",click = "click_Graph_5")),
+                 column(4,plotOutput("output_Graph_6",height = "300px",click = "click_Graph_6"))
         )
         
         

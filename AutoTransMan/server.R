@@ -42,6 +42,7 @@ shinyServer(function(input, output, session){
     New_Yule = NULL,
     hasBeenTransformed = NULL,
     Transformation_Used = NULL,
+    Transformation_Used_Index = NULL,
   
     VarDef_table = NULL,
     VarDef_label = NULL,
@@ -103,6 +104,54 @@ shinyServer(function(input, output, session){
         }
   })
   
+  # Observer for button click
+  observeEvent(input$click_Graph_1,{handle_Click(1)})
+  observeEvent(input$click_Graph_2,{handle_Click(2)})
+  observeEvent(input$click_Graph_3,{handle_Click(3)})
+  observeEvent(input$click_Graph_4,{handle_Click(4)})
+  observeEvent(input$click_Graph_5,{handle_Click(5)})
+  observeEvent(input$click_Graph_6,{handle_Click(6)})
+  
+  #observer - when the apply transformation button is clicked
+  observeEvent(input$button_Apply,{
+    if('button_Apply' %in% names(input)){
+      nr_trans_selected = SystemVariables$Graphs_Nr_Selected
+      nr_var_viewed = SystemVariables$Variable_Selected_IndexOf
+      SystemVariables$Data_Transformed[,nr_var_viewed] = SystemVariables$Graphs_display_transformed_data[[nr_trans_selected]]
+      SystemVariables$New_Yule[nr_var_viewed] = SystemVariables$Graphs_display_transformed_yule[[1]][nr_trans_selected]
+      SystemVariables$Transformation_Used[nr_var_viewed] = names(SystemVariables$Graphs_display_transformed_yule[[1]])[nr_trans_selected]
+      SystemVariables$Transformation_Used_Index[nr_var_viewed] = nr_trans_selected
+      SystemVariables$hasBeenTransformed[nr_var_viewed] = T
+      
+      
+      
+      #zeroize graph display
+        
+      SystemVariables$Graphs_RefreshNeeded = F
+      SystemVariables$Graphs_Nr_Displayed = NULL
+      SystemVariables$Graphs_ggplot2_obj_list = NULL
+      SystemVariables$Graphs_display_transformed_data = NULL
+      SystemVariables$Graphs_display_transformed_yule = NULL
+      SystemVariables$Graphs_Nr_Selected = -1
+      
+      SystemVariables$Variable_Selected = F
+      SystemVariables$Variable_Selected_IndexOf = -1
+      
+      SystemVariables$BeforeList_IndexSelected = -1
+      SystemVariables$AfterList_IndexSelected = 1
+      SystemVariables$BeforeList_HasFocus = F
+      SystemVariables$AfterList_HasFocus = T
+      
+      #refresh lists
+      
+      Controller_ComputeList()
+      Controller_VariableSelected()
+      
+      #SystemVariables$Lists_RefreshNeeded  = T # call for a refresh of lists
+      SystemVariables$StatusLineString = "Transformation Applied"
+    }
+  })
+  
   #Observer - check if data is loaded
   observe({
     #Check if Data is loaded
@@ -162,6 +211,9 @@ shinyServer(function(input, output, session){
   
   #Observer -  Refresh Graphs, on any refresh needed (listens to change in variable selection)
   observe({
+    
+    #temp = s
+    
     current_index_before_list = -1
     current_index_after_list = -1
     #get current selected index of Before/After list
@@ -207,6 +259,7 @@ shinyServer(function(input, output, session){
     SystemVariables$New_Yule = SystemVariables$Original_Yule
     SystemVariables$hasBeenTransformed = rep(F,data_nvar)
     SystemVariables$Transformation_Used = rep("None",data_nvar)
+    SystemVariables$Transformation_Used_Index = rep(-1,data_nvar)
     SystemVariables$Data_Transformed = SystemVariables$Data_Original
     
   }
@@ -216,11 +269,10 @@ shinyServer(function(input, output, session){
   # load into vardef variables
   # if an error occured, display error message
   Controller_LoadVarDef = function(){
-    SystemVariables$VarDef_File
-    VarDef_label = (SystemVariables$VarDef_File$Variable)
-    VarDef_a = SystemVariables$VarDef_File$a
-    VarDef_b = SystemVariables$VarDef_File$b
-    VarDef_type = SystemVariables$VarDef_File$type
+    SystemVariables$VarDef_label = (SystemVariables$VarDef_table$Variable)
+    SystemVariables$VarDef_a = SystemVariables$VarDef_table$a
+    SystemVariables$VarDef_b = SystemVariables$VarDef_table$b
+    SystemVariables$VarDef_type = SystemVariables$VarDef_table$Type
   }
   
   
@@ -254,16 +306,16 @@ shinyServer(function(input, output, session){
     
     SystemVariables$AfterList_Indices_of_var = ind_after
     SystemVariables$AfterList_HasBeenTransformed = SystemVariables$hasBeenTransformed[ind_after]
-    AfterList_Labels = colnames(SystemVariables$Data_Original)[ind_after]
+    SystemVariables$AfterList_Labels = colnames(SystemVariables$Data_Original)[ind_after]
     
     
     #populate lists
     updateSelectInput(session, "ui_list_Before",label = "Before:",
-                      choices = SystemVariables$BeforeList_Labels,selected = 1
+                      choices = SystemVariables$BeforeList_Labels,selected = NULL
     )
     
     updateSelectInput(session, "ui_list_After", label = "After:",
-                      choices = SystemVariables$AfterList_Labels,selected = 1
+                      choices = SystemVariables$AfterList_Labels,selected = NULL
     )
 
     SystemVariables$StatusLineString = paste0("List Drawn at:  ",as.character(Sys.time()))
@@ -273,25 +325,67 @@ shinyServer(function(input, output, session){
   
   # Function for computation of tranformation, storing them in data etc
   # from current data state:
-  # - by var type select list of transformations
-  # - compute transformations + yule
-  # - order them by yule improvments
+  # - get current index of selected from before or after lists/ need to find out
+  # - call transofrmation manager:
+  #     by var type select list of transformations
+  #     compute transformations + yule
+  #     order them by yule improvments
   # - put in display variables
+  # - zeroize, selection and redraw falgs.
+  # - put label in status bar
   Controller_VariableSelected = function(){
+    
+
     if(SystemVariables$BeforeList_HasFocus & SystemVariables$BeforeList_IndexSelected!=-1){
       SystemVariables$Variable_Selected = T
       SystemVariables$Variable_Selected_IndexOf = SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]
+      #remember to zeroize selection on the before list, otherwise we will not bet able to reselect it
+      updateSelectInput(session, "ui_list_After", label = "After:",
+                        choices = SystemVariables$AfterList_Labels,selected = NULL
+      )
     }
     if(SystemVariables$AfterList_HasFocus & SystemVariables$AfterList_IndexSelected!=-1){
       SystemVariables$Variable_Selected =T
       SystemVariables$Variable_Selected_IndexOf = SystemVariables$AfterList_Indices_of_var[SystemVariables$AfterList_IndexSelected]
+      SystemVariables$Graphs_Nr_Selected   =  SystemVariables$Transformation_Used_Index[SystemVariables$Variable_Selected_IndexOf]
+      
+      #remember to zeroize selection on the before list, otherwise we will not bet able to reselect it
+      updateSelectInput(session, "ui_list_Before",label = "Before:",
+                        choices = SystemVariables$BeforeList_Labels,selected = NULL
+      )
+      
     }
     
+    #calling transformation functions, and storing results:
+    ind_selected = SystemVariables$Variable_Selected_IndexOf
+    transformations_obj = NULL
+    transformations_obj = try(wrapTypes(
+      SystemVariables$Data_Original[,ind_selected],
+      "Amounts",#as.character(SystemVariables$VarDef_type[ind_selected]),
+      SystemVariables$VarDef_a[ind_selected],
+      SystemVariables$VarDef_b[ind_selected]))
+    if(!is.null(transformations_obj)){
+      transformation_names = names(foo$Transformations$Transformations)
+      
+      #save into System variables
+      SystemVariables$Graphs_ggplot2_obj_list  = transformations_obj$Plots
+      SystemVariables$Graphs_display_transformed_data  = transformations_obj$Transformations$Transformations
+      SystemVariables$Graphs_display_transformed_yule   = transformations_obj$Transformations$`Yule Index` 
+      
+      #no graph selected after redraw
+      if(SystemVariables$BeforeList_HasFocus)
+      SystemVariables$Graphs_Nr_Selected = -1
+      
+      SystemVariables$Graphs_RefreshNeeded = F
+      
+      SystemVariables$StatusLineString = paste0(
+        colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf],
+        " selected")  
+    }else{
+      SystemVariables$StatusLineString = ""
+      SystemVariables$ErrorLineString = paste0("Cannot transform ",colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf])
+    }
     
-    
-    SystemVariables$StatusLineString = paste0(
-      colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf],
-      " selected")
     
   }
   
@@ -308,25 +402,54 @@ shinyServer(function(input, output, session){
   ###
   
   # Graph Renderers:
-  output$output_Graph_1 = renderPlot({plot(1:100,1:100)})
+  output$output_Graph_1 = renderPlot({get_plot(1)})
   
-  output$output_Graph_2 = renderPlot({plot(1:100,1:100)})
+  output$output_Graph_2 = renderPlot({get_plot(2)})
   
-  output$output_Graph_3 = renderPlot({plot(1:100,1:100)})
+  output$output_Graph_3 = renderPlot({get_plot(3)})
   
-  output$output_Graph_4 = renderPlot({plot(1:100,1:100)})
+  output$output_Graph_4 = renderPlot({get_plot(4)})
   
-  output$output_Graph_5 = renderPlot({plot(1:100,1:100)})
+  output$output_Graph_5 = renderPlot({get_plot(5)})
   
-  output$output_Graph_6 = renderPlot({plot(1:100,1:100)})
+  output$output_Graph_6 = renderPlot({get_plot(6)})
+  
+  get_plot = function(index){
+    return_obj = ggplot()+theme_light()
+    return_graph = F
+    if(SystemVariables$Variable_Selected)
+      if(!is.null(SystemVariables$Graphs_ggplot2_obj_list))
+        if(length(SystemVariables$Graphs_ggplot2_obj_list )>=index)
+          return_graph = T
+    if(return_graph){
+      return_obj = SystemVariables$Graphs_ggplot2_obj_list[[index]]
+      if(SystemVariables$Graphs_Nr_Selected == index){
+        # need to add selection
+        return_obj = return_obj + theme(panel.border = element_rect(
+                                          size = 3,
+                                          colour = "red",
+                                          fill = NA
+                                        ))
+      }
+    }
+    return(return_obj)
+  }
   
   # Select Button Renderers:
-  #Display buttons if graph is present and varible selected
+  #Display buttons if graph is present and transformation has been selected
+  output$button_Apply = renderUI({
+    if (SystemVariables$Graphs_Nr_Selected > 0){
+      actionButton("button_Apply", "Apply Transformation")
+    }
+  })
   
   #Status Display Renderer
-  #Used Also for checking of uploads
   output$StatusLine = renderText({ 
-    SystemVariables$StatusLineString
+    s = SystemVariables$StatusLineString
+    if(length(SystemVariables$ErrorLineString) > 1){
+     s = paste0(s," , Error: ",SystemVariables$ErrorLineString) 
+    }
+    s
   })
   
   
@@ -336,6 +459,9 @@ shinyServer(function(input, output, session){
   
   # Handle Approve Transformation Selection (handlers_per_button)
   
-  
+  handle_Click = function(index){
+    if(length(SystemVariables$Graphs_ggplot2_obj_list) >= index)
+      SystemVariables$Graphs_Nr_Selected  = index
+  }
   
 })
