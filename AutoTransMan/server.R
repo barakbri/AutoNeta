@@ -1,5 +1,11 @@
 library(shiny)
 
+FIELDS_TO_SAVE_LIST = c('Data_File','Data_FileName','Data_Is_Loaded','Data_Is_Error',
+                        'VarDef_File','VarDef_FileName','VarDef_Is_Loaded','VarDef_Is_Error',
+                        'Data_Original','Data_Transformed','Original_Yule','New_Yule',
+                        'hasBeenTransformed','Transformation_Used','Transformation_Used_Index',
+                        'VarDef_table','VarDef_label','VarDef_a','VarDef_b','VarDef_type')
+
 #installing packages
 #if(!("HHG" %in% rownames(installed.packages()))){
 #  install.packages('HHG')
@@ -298,7 +304,7 @@ shinyServer(function(input, output, session){
       before_original_yules = before_original_yules[ord]
       
       for(i in 1:length(ord)){
-        SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "(yule:", before_original_yules[i],")")
+        SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "(yule:", round(before_original_yules[i],3),")")
       }
       
     }
@@ -361,12 +367,11 @@ shinyServer(function(input, output, session){
     transformations_obj = NULL
     transformations_obj = try(wrapTypes(
       SystemVariables$Data_Original[,ind_selected],
-      "Amounts",#as.character(SystemVariables$VarDef_type[ind_selected]),
+      as.character(SystemVariables$VarDef_type[ind_selected]),
       SystemVariables$VarDef_a[ind_selected],
       SystemVariables$VarDef_b[ind_selected]))
     if(!is.null(transformations_obj)){
-      transformation_names = names(foo$Transformations$Transformations)
-      
+      transformation_names = names(transformations_obj$Transformations$Transformations)
       #save into System variables
       SystemVariables$Graphs_ggplot2_obj_list  = transformations_obj$Plots
       SystemVariables$Graphs_display_transformed_data  = transformations_obj$Transformations$Transformations
@@ -396,6 +401,51 @@ shinyServer(function(input, output, session){
   Controller_TransformationApproved = function(index_of_button){
     
   }
+  
+  
+  ###
+  # state handlers - download and upload
+  ###
+  output$button_Save <- downloadHandler(
+    filename = function() {
+      paste("workspace-", Sys.Date(), ".Rdata", sep="")
+    },
+    content = function(file) {
+      save_list = isolate(reactiveValuesToList(SystemVariables))
+      save(save_list,file = file)  
+      #dt = data.frame(Variable = names(SystemVariables),Value = NA)
+      #for(i in 1:nrow(dt)){
+      #  dt$Value[i] = SystemVariables[[dt$Variable[i]]]
+      #}
+      #write.csv(dt, file,quote = F,row.names = F)
+      #if(!is.null(file)){
+      #  save_list = list()
+      #  for(i in 1:length(FIELDS_TO_SAVE_LIST)){
+      #    save_list[[ FIELDS_TO_SAVE_LIST[i] ]] = SystemVariables[ FIELDS_TO_SAVE_LIST[i] ]
+      #  }
+      #  save(save_list,file = file)  
+      #}
+      
+    }
+  )
+ 
+  output$button_Export <- downloadHandler(
+    filename = function() {
+      paste("data-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(data, file)
+    }
+  )
+  
+  output$button_ExportTransReport <- downloadHandler(
+    filename = function() {
+      paste("data-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(data, file)
+    }
+  )
   
   ###
   # Renderers:
@@ -442,7 +492,7 @@ shinyServer(function(input, output, session){
       actionButton("button_Apply", "Apply Transformation")
     }
   })
-  
+ 
   #Status Display Renderer
   output$StatusLine = renderText({ 
     s = SystemVariables$StatusLineString
@@ -463,5 +513,20 @@ shinyServer(function(input, output, session){
     if(length(SystemVariables$Graphs_ggplot2_obj_list) >= index)
       SystemVariables$Graphs_Nr_Selected  = index
   }
+  
+  ###
+  # Additional Pages & Actions
+  ###
+  
+  
+  output$Page_Help = renderUI({
+    renderUI("HELP PAGE HERE")
+  })
+  
+  output$Page_About = renderUI({
+    renderUI("HELP PAGE HERE")
+  })
+  
+  
   
 })
