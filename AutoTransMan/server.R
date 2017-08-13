@@ -1,10 +1,9 @@
 library(shiny)
 
-FIELDS_TO_SAVE_LIST = c('Data_File','Data_FileName','Data_Is_Loaded','Data_Is_Error',
-                        'VarDef_File','VarDef_FileName','VarDef_Is_Loaded','VarDef_Is_Error',
-                        'Data_Original','Data_Transformed','Original_Yule','New_Yule',
-                        'hasBeenTransformed','Transformation_Used','Transformation_Used_Index',
-                        'VarDef_table','VarDef_label','VarDef_a','VarDef_b','VarDef_type')
+# definitions:
+source('definitions.r')
+#version:
+VERSION_SERVER = '20170813'
 
 #installing packages
 #if(!("HHG" %in% rownames(installed.packages()))){
@@ -22,10 +21,14 @@ shinyServer(function(input, output, session){
   # Variable Defenitions:
   ###
   SystemVariables <- reactiveValues(
-    
-    StatusLineString = "INIT",
+    Version_Server = VERSION_SERVER,
+    StatusLineString = STATUS_LINE_MSGS$INIT,
     ErrorLineString = "",
     
+  # reference to files being loaded
+    WorkSpaceFileName = NULL,
+    workSpaceIsLoaded = F,
+  
   # Data/Model variables
     
     Data_File = NULL,
@@ -55,6 +58,7 @@ shinyServer(function(input, output, session){
     VarDef_a = NULL,
     VarDef_b = NULL, 
     VarDef_type = NULL,
+    VarDef_reverse = NULL,
   
   #Lists variables
   
@@ -153,9 +157,23 @@ shinyServer(function(input, output, session){
       Controller_ComputeList()
       Controller_VariableSelected()
       
-      #SystemVariables$Lists_RefreshNeeded  = T # call for a refresh of lists
-      SystemVariables$StatusLineString = "Transformation Applied"
+      SystemVariables$StatusLineString = STATUS_LINE_MSGS$TRANSFORMATION_APPLIED
     }
+  })
+  
+  #observer - check if workspace has been loaded
+  observe({
+    
+    inFile_WorkSpace = input$button_Load
+    if(!SystemVariables$workSpaceIsLoaded & !is.null(inFile_WorkSpace) ){
+      SystemVariables$WorkSpaceFileName = inFile_WorkSpace$datapath
+      
+      #Call Controller Logic Function for loading saved file
+      Controller_LoadWorkSpace()
+      
+      SystemVariables$workSpaceIsLoaded = T
+    }
+    
   })
   
   #Observer - check if data is loaded
@@ -180,7 +198,7 @@ shinyServer(function(input, output, session){
       Controller_LoadData() 
       
       SystemVariables$Data_Is_Loaded = T
-      SystemVariables$StatusLineString = "Data Loaded"
+      SystemVariables$StatusLineString = STATUS_LINE_MSGS$DATA_LOADED
     }
     
     
@@ -196,7 +214,7 @@ shinyServer(function(input, output, session){
       Controller_LoadVarDef()
       
       SystemVariables$VarDef_Is_Loaded = T
-      SystemVariables$StatusLineString = "Variable Defenition Loaded"
+      SystemVariables$StatusLineString = STATUS_LINE_MSGS$VARDEF_LOADED
     }
     
     if(SystemVariables$VarDef_Is_Loaded & SystemVariables$Data_Is_Loaded){
@@ -279,8 +297,8 @@ shinyServer(function(input, output, session){
     SystemVariables$VarDef_a = SystemVariables$VarDef_table$a
     SystemVariables$VarDef_b = SystemVariables$VarDef_table$b
     SystemVariables$VarDef_type = SystemVariables$VarDef_table$Type
+    SystemVariables$VarDef_reverse = SystemVariables$VarDef_table$'To.Reverse.'
   }
-  
   
   # Function for computation of list variables,
   # from current data state:
@@ -316,16 +334,70 @@ shinyServer(function(input, output, session){
     
     
     #populate lists
-    updateSelectInput(session, "ui_list_Before",label = "Before:",
+    Controller_Update_BeforeList()
+    Controller_Update_AfterList()
+   
+
+    SystemVariables$StatusLineString = paste0(UI_LABELS$LIST_REFRESH_MSG)
+    SystemVariables$Lists_RefreshNeeded = F
+  }
+  
+  Controller_Update_BeforeList = function(){
+    updateSelectInput(session, "ui_list_Before",label = UI_LABELS$BEFORE_LIST,
                       choices = SystemVariables$BeforeList_Labels,selected = NULL
     )
-    
-    updateSelectInput(session, "ui_list_After", label = "After:",
+  }
+  
+  Controller_Update_AfterList = function(){
+    updateSelectInput(session, "ui_list_After", label = UI_LABELS$AFTER_LIST,
                       choices = SystemVariables$AfterList_Labels,selected = NULL
     )
-
-    SystemVariables$StatusLineString = paste0("List Drawn at:  ",as.character(Sys.time()))
+  }
+  
+  #Controller function called on workspace load, handles the laoding from file
+  # along with zeroizing of graphic variables, and recomputing lists
+  Controller_LoadWorkSpace = function(){
+    load(file = SystemVariables$WorkSpaceFileName) #=> save_list
+    for(i in 1:length(FIELDS_TO_SAVE_LIST)){
+      SystemVariables[[ FIELDS_TO_SAVE_LIST[i] ]] = save_list[[ FIELDS_TO_SAVE_LIST[i] ]]
+    }
+    if(SystemVariables$Version_Server != VERSION_SERVER){
+      showModal(modalDialog(
+        title = "Warning: Possible Save File Server Mismatch!",
+        paste0('Server Version:',VERSION_SERVER,',',' Save File Version: ',SystemVariables$Version_Server)
+      ))
+    }
+    #zeroize the reset of the memory space
+    SystemVariables$ErrorLineString = ""
     SystemVariables$Lists_RefreshNeeded = F
+    
+    SystemVariables$BeforeList_Indices_of_var = NULL
+    SystemVariables$BeforeList_Color_Code = NULL
+    SystemVariables$BeforeList_OrderBy_Yule = F
+    SystemVariables$BeforeList_Labels = NULL
+    SystemVariables$BeforeList_IndexSelected = -1
+    SystemVariables$BeforeList_HasFocus = F
+    
+    SystemVariables$AfterList_Indices_of_var = NULL
+    SystemVariables$AfterList_HasBeenTransformed = NULL
+    SystemVariables$AfterList_Labels = NULL
+    SystemVariables$AfterList_IndexSelected = -1
+    SystemVariables$AfterList_HasFocus = F
+        
+    SystemVariables$Variable_Selected = F
+    SystemVariables$Variable_Selected_IndexOf = -1
+    
+    SystemVariables$Graphs_RefreshNeeded = F
+    SystemVariables$Graphs_Nr_Displayed = NULL
+    SystemVariables$Graphs_ggplot2_obj_list = NULL
+    SystemVariables$Graphs_display_transformed_data = NULL
+    SystemVariables$Graphs_display_transformed_yule = NULL
+    SystemVariables$Graphs_Nr_Selected = -1
+    
+    # recompute lists, also set them to be not selected
+    Controller_ComputeList()
+    
+    SystemVariables$StatusLineString = STATUS_LINE_MSGS$WORKSPACE_LOAD
   }
   
   
@@ -345,10 +417,8 @@ shinyServer(function(input, output, session){
     if(SystemVariables$BeforeList_HasFocus & SystemVariables$BeforeList_IndexSelected!=-1){
       SystemVariables$Variable_Selected = T
       SystemVariables$Variable_Selected_IndexOf = SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]
-      #remember to zeroize selection on the before list, otherwise we will not bet able to reselect it
-      updateSelectInput(session, "ui_list_After", label = "After:",
-                        choices = SystemVariables$AfterList_Labels,selected = NULL
-      )
+      #remember to zeroize selection on the after list, otherwise we will not bet able to reselect it
+      Controller_Update_AfterList()
     }
     if(SystemVariables$AfterList_HasFocus & SystemVariables$AfterList_IndexSelected!=-1){
       SystemVariables$Variable_Selected =T
@@ -356,20 +426,25 @@ shinyServer(function(input, output, session){
       SystemVariables$Graphs_Nr_Selected   =  SystemVariables$Transformation_Used_Index[SystemVariables$Variable_Selected_IndexOf]
       
       #remember to zeroize selection on the before list, otherwise we will not bet able to reselect it
-      updateSelectInput(session, "ui_list_Before",label = "Before:",
-                        choices = SystemVariables$BeforeList_Labels,selected = NULL
-      )
+      Controller_Update_BeforeList()
       
     }
     
     #calling transformation functions, and storing results:
     ind_selected = SystemVariables$Variable_Selected_IndexOf
     transformations_obj = NULL
-    transformations_obj = try(wrapTypes(
-      SystemVariables$Data_Original[,ind_selected],
-      as.character(SystemVariables$VarDef_type[ind_selected]),
-      SystemVariables$VarDef_a[ind_selected],
-      SystemVariables$VarDef_b[ind_selected]))
+    transformations_obj = try(
+        wrapTypes(
+        target.vec = SystemVariables$Data_Original[,ind_selected],
+        type = "Amounts",#as.character(SystemVariables$VarDef_type[ind_selected]),
+        a = SystemVariables$VarDef_a[ind_selected],
+        b = SystemVariables$VarDef_b[ind_selected],
+        #to.reverse  = FALSE#, 
+        #bin.width   = NULL,
+        #window.size = NULL,
+        #var.name    = NULL,
+        )
+      )
     if(!is.null(transformations_obj)){
       transformation_names = names(transformations_obj$Transformations$Transformations)
       #save into System variables
@@ -404,7 +479,7 @@ shinyServer(function(input, output, session){
   
   
   ###
-  # state handlers - download and upload
+  # download handlers for save and export
   ###
   output$button_Save <- downloadHandler(
     filename = function() {
@@ -413,37 +488,46 @@ shinyServer(function(input, output, session){
     content = function(file) {
       save_list = isolate(reactiveValuesToList(SystemVariables))
       save(save_list,file = file)  
-      #dt = data.frame(Variable = names(SystemVariables),Value = NA)
-      #for(i in 1:nrow(dt)){
-      #  dt$Value[i] = SystemVariables[[dt$Variable[i]]]
-      #}
-      #write.csv(dt, file,quote = F,row.names = F)
-      #if(!is.null(file)){
-      #  save_list = list()
-      #  for(i in 1:length(FIELDS_TO_SAVE_LIST)){
-      #    save_list[[ FIELDS_TO_SAVE_LIST[i] ]] = SystemVariables[ FIELDS_TO_SAVE_LIST[i] ]
-      #  }
-      #  save(save_list,file = file)  
-      #}
-      
     }
   )
  
+  
   output$button_Export <- downloadHandler(
     filename = function() {
-      paste("data-", Sys.Date(), ".csv", sep="")
+      paste("data-export-", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
-      write.csv(data, file)
+      if(!SystemVariables$Data_Is_Loaded || !SystemVariables$VarDef_Is_Loaded){
+        showModal(modalDialog(
+          title = MSGS$MSG_CANNOT_EXPORT_TITLE,
+          MSGS$MSG_CANNOT_EXPORT_BODY
+        ))
+      }else{
+        write.csv(SystemVariables$Data_Transformed, file = file,quote = F,row.names = F)  
+      }
+      
     }
   )
   
   output$button_ExportTransReport <- downloadHandler(
     filename = function() {
-      paste("data-", Sys.Date(), ".csv", sep="")
+      paste("trans-report-", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
-      write.csv(data, file)
+      if(!SystemVariables$Data_Is_Loaded || !SystemVariables$VarDef_Is_Loaded){
+        showModal(modalDialog(
+          title = MSGS$MSG_CANNOT_EXPORT_TITLE,
+          MSGS$MSG_CANNOT_EXPORT_BODY
+        ))
+      }else{
+        transformation_report = data.frame( variables = colnames(SystemVariables$Data_Original),
+                                            Original_Yule = SystemVariables$Original_Yule,
+                                            New_Yule = SystemVariables$New_Yule,
+                                            hasBeenTransformed = SystemVariables$hasBeenTransformed,
+                                            Transformation_Used = SystemVariables$Transformation_Used )
+        write.csv(transformation_report, file = file,quote = F,row.names = F)  
+      }
+      
     }
   )
   
@@ -489,7 +573,7 @@ shinyServer(function(input, output, session){
   #Display buttons if graph is present and transformation has been selected
   output$button_Apply = renderUI({
     if (SystemVariables$Graphs_Nr_Selected > 0){
-      actionButton("button_Apply", "Apply Transformation")
+      actionButton("button_Apply", UI_LABELS$BUTTON_LABEL_APPLY_TRANSFORMATION)
     }
   })
  
@@ -520,13 +604,15 @@ shinyServer(function(input, output, session){
   
   
   output$Page_Help = renderUI({
-    renderUI("HELP PAGE HERE")
+    HTML("HELP PAGE HERE")
   })
   
   output$Page_About = renderUI({
-    renderUI("HELP PAGE HERE")
+    HTML("HELP ABOUT HERE")
   })
   
   
   
 })
+
+
