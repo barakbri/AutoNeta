@@ -1,5 +1,7 @@
 library('ggplot2')
 
+## Barak is stealing all the taami 
+
 # Yule's index function
 yuleIndex <- function(x) { 
   x <- sort(x)
