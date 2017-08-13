@@ -4,7 +4,7 @@
 #This is the land of the creatures known as constants:
 
 #This is the list of fields to be loaded, on workspace load
-FIELDS_TO_SAVE_LIST = c('Data_File','Data_FileName','Data_Is_Loaded','Data_Is_Error',
+FIELDS_TO_SAVE_LIST = c('Version_Server','Data_File','Data_FileName','Data_Is_Loaded','Data_Is_Error',
                         'VarDef_File','VarDef_FileName','VarDef_Is_Loaded','VarDef_Is_Error',
                         'Data_Original','Data_Transformed','Original_Yule','New_Yule',
                         'hasBeenTransformed','Transformation_Used','Transformation_Used_Index',
@@ -51,5 +51,6 @@ UI_LABELS$SLIDER_KDE_WIDTH = "KDE Width:"
 UI_LABELS$HELP_MENU = "Help"
 UI_LABELS$HELP_MENU_HELP_ITEM = "Help"
 UI_LABELS$HELP_MENU_ABOUT_ITEM = "About"
+
 #UX/UI constants:
 PLOT_HEIGHT = "280px"
