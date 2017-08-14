@@ -1,18 +1,40 @@
-## Load libraries 
+###########################
+# Libraries Load ----------------------------------------------------------
 library('ggplot2')
+###########################
+
+###########################
+# Index Functions  --------------------------------------------------------
+
+
+## Creating index, currently only supports YULE
+## Should always be as following 1. Index value 2. Order index (allowing none to be first)
+## 3. Name of index
+createIndex <- function(transform.list, index = 'Yule') { 
+  if (index == 'Yule') { 
+    yul.ind   <- unlist(lapply(transform.list, yuleIndex))
+    names(yul.ind) <- names(transform.list)
+    ord.ind <- c(1, order(abs(yul.ind[2:length(yul.ind)])) + 1)
+    return(list('Index' = yul.ind, 'Order' = ord.ind, 'Name' = index))  
+  }
+}
 
 
 # Yule's index function
 yuleIndex <- function(x) { 
-  x <- sort(na.omit(x))
-  l <- length(x)
+  
   ## Checks 
+  if (is.null(x)) { 
+    return(NULL)
+  }
   if (!any(is.numeric(x))) { 
     print("Can't calculate skewness for non-numeric arguments")
     stop()
   } 
+  x <- sort(x)
+  l <- length(x)
   ## Return 0 if variable is constant 
-  if (length(unique(x.no.na)) == 1) {
+  if (length(unique(x)) == 1) {
     return(0)
   }
   if (l < 4) {
@@ -29,9 +51,32 @@ yuleIndex <- function(x) {
   return(sk)
 }
 
+###########################
 
-
+###########################
 # Transformations ---------------------------------------------------------
+
+## Cumlative Entropy 
+cumlativeEntropy <- function(x) { 
+  sum.x <- length(x)
+  tab.x <- data.frame(table(x) / sum.x)
+  p     <- nrow(tab.x)
+  ## Dealing p = 0, first group 
+  temp.q <- tab.x[1,'Freq'] 
+  tab.x[1,'Changed.Value'] <- (temp.q * log(temp.q) + (1 - temp.q) * log(1 - temp.q)) / temp.q 
+  ## Dealing q = 1, last group 
+  temp.p <-  (1 -  tab.x[p,'Freq']) 
+  tab.x[p,'Changed.Value'] <- (-temp.p * log(temp.p) - (1 - temp.p) * log(1 - temp.p)) / (1 - temp.p)
+  for (i in 2:(p - 1)) {
+    temp.q                   <- sum(tab.x[1:i,'Freq'])
+    temp.p                   <- sum(tab.x[1:(i - 1),'Freq'])
+    tab.x[i,'Changed.Value'] <- (temp.q * log(temp.q) + (1 - temp.q) * log(1 - temp.q) - 
+                                   (temp.p * log(temp.p) + (1 - temp.p) * log(1 - temp.p))) / 
+      (temp.q - temp.p)
+  }
+  x.new <-  tab.x[match(x, tab.x[ ,'x']), 'Changed.Value']
+  return(x.new)
+}
 
 ## Logit
 logit <- function(x, const = 1 / 3 , b = 1) { 
@@ -49,19 +94,18 @@ remZero <- function(x) {
 }
 
 
+## Wrapping Transformations 
 transformList <- function(target.vec, 
                           transform.vec, 
-                          a = min(target.vec, na.rm = T), 
-                          b = max(target.vec, na.rm = T),
-                          to.reverse  = FALSE, 
-                          bin.width   = NULL,
-                          window.size = NULL,
-                          var.name    = NULL) {
+                          a = NULL, 
+                          b = NULL) {
   transform.list      <- list()
   target.vec.rem.zero <- remZero(target.vec)
+  ## Always add original at begining 
+  transform.list[['none']] <- target.vec
   if ('log' %in% transform.vec) { 
     transform.list[['log']] <- log(target.vec.rem.zero) 
-    }
+  }
   if ('sqrt' %in% transform.vec) { 
     transform.list[['sqrt']] <- sqrt(target.vec) 
   }
@@ -92,63 +136,66 @@ transformList <- function(target.vec,
   if ('frac' %in% transform.vec) { 
     transform.list[['frac']]  <- (target.vec - b) / (b - a)
   }
-  ## Yule Index Only available 
-  yul.ind   <- unlist(lapply(transform.list, yuleIndex)); names(yul.ind) <- names(transform.list)
-  ord.ind   <- order(abs(yul.ind))
-  transform.list <- list('Transformations' = append(list('None' = target.vec), transform.list[ord.ind]),
-                         'Yule Index' = list(c('None' = yuleIndex(target.vec), yul.ind[ord.ind])))
-  
-  ## Plotting 
-  if (is.null(bin.size)) { 
-    bin.size <- unlist(lapply(transform.list$Transformations, BinWidthHist))
-  } 
-  if (is.null(window.size)) { 
-    win.size <- unlist(lapply(transform.list$Transformations, BinWidthHist))
+  if ('to.reverse' %in% transform.vec) {
+    transform.list[['to.reverse']] <- b - target.vec 
   }
-  return(list('Transformations' = transform.list, 
-              'Plots' = plotTransform(transform.list, 
-                                      var.name, 
-                                      bin.width.plot = bin.size, 
-                                      window.size.plot = win.size)))
-}  
+  return(transform.list)
+}
 
 
-plotTransform <- function(transform.list, var.name, bin.width.plot, window.size.plot) { 
+###########################
+
+###########################
+# Plotting Functions  -----------------------------------------------------
+
+
+
+## Binwidth Calculater based on Freedman Diaconis 
+BinWidthHist <- function(x) { 
+  return((2 * IQR(x, na.rm = TRUE) / length(na.omit(x))^(1 / 3)))
+}
+
+## Binwidth for density based on bw.nrd0 of base R 
+BinWidthDens <- function(x) { 
+  return(bw.nrd0(na.omit(x)))
+}
+
+
+## Plotting 
+plotTransform <- function(transform.list, 
+                          var.name = NULL, 
+                          bin.width.plot = NULL, 
+                          window.size.plot = NULL,
+                          KDE = T,
+                          ind.vec,
+                          ind.name = NULL) { 
+  ## Dealing with sizes (KDE, binwidth )
+  if (is.null(bin.width.plot)) { 
+    bin.size <- unlist(lapply(transform.list, BinWidthHist))
+  } 
+  if (is.null(window.size.plot)) { 
+    win.size <- unlist(lapply(transform.list, BinWidthDens))
+  }
   plot.list <- list()
-  df.list   <- lapply(transform.list$Transformations, data.frame)
-  p <- length(transform.list$Transformations)
-  yul.ind <- unlist(transform.list$`Yule Index`)
+  df.list   <- lapply(transform.list, data.frame)
+  p       <- length(transform.list)
   for (i in 1:p) { 
-    plot.list[[i]] <- ggplot(df.list[[i]], aes_string(x = names(df.list[[i]]))) +
-      geom_histogram(aes(y=..density..), binwidth = bin.width.plot[i]) + 
-      geom_density(color = 'blue', size = 1.25, bw = window.size.plot[i]) +
-      ggtitle(paste(var.name, 'Transformation', names(df.list)[i], 'Yule Index' = round(yul.ind[i], 4))) + 
-      xlab('Variable') 
+    temp.plot <- ggplot(df.list[[i]], aes_string(x = names(df.list[[i]]))) +
+      geom_histogram(aes(y=..density..), binwidth = win.size[i]) + 
+      ggtitle(paste(var.name, 'Transformation', names(df.list)[i], ind.name, '=', round(ind.vec[i], 4))) + 
+      xlab(var.name) 
+    if (KDE == T) { 
+      temp.plot <- temp.plot + geom_density(color = 'blue', size = 1.25, bw = bin.size[i]) 
     }
+    plot.list[[i]] <- temp.plot
+  }
   return(plot.list)
 }
+###########################
 
+###########################
+# Categories Functions  ---------------------------------------------------
 
-cumlativeEntropy <- function(x) { 
-  sum.x <- length(x)
-  tab.x <- data.frame(table(x) / sum.x)
-  p     <- nrow(tab.x)
-  ## Dealing p = 0, first group 
-  temp.q <- tab.x[1,'Freq'] 
-  tab.x[1,'Changed.Value'] <- (temp.q * log(temp.q) + (1 - temp.q) * log(1 - temp.q)) / temp.q 
-  ## Dealing q = 1, last group 
-  temp.p <-  (1 -  tab.x[p,'Freq']) 
-  tab.x[p,'Changed.Value'] <- (-temp.p * log(temp.p) - (1 - temp.p) * log(1 - temp.p)) / (1 - temp.p)
-  for (i in 2:(p - 1)) {
-    temp.q                   <- sum(tab.x[1:i,'Freq'])
-    temp.p                   <- sum(tab.x[1:(i - 1),'Freq'])
-    tab.x[i,'Changed.Value'] <- (temp.q * log(temp.q) + (1 - temp.q) * log(1 - temp.q) - 
-                                (temp.p * log(temp.p) + (1 - temp.p) * log(1 - temp.p))) / 
-                                (temp.q - temp.p)
-  }
-  x.new <-  tab.x[match(x, tab.x[ ,'x']),'Changed.Value']
-  return(x.new)
-}
 
 ## Function for amounts 
 amountFunction <- function(target.vec) { 
@@ -156,7 +203,7 @@ amountFunction <- function(target.vec) {
   if (mean(target.vec, na.rm = TRUE) > median(target.vec, na.rm = TRUE))
   {
     temp.transform <- c('log', 'sqrt', 'invert')
-  ## If left skewed perform power of 2 
+    ## If left skewed perform power of 2 
   } else {
     temp.transform <- c('power.2')
   }
@@ -205,6 +252,10 @@ countFracFunction <- function(target.vec, b) {
   tran.vec <- c('logit') 
   return(tran.vec)
 }
+###########################
+
+###########################
+# Wrapping Function Barak  ------------------------------------------------
 
 
 wrapTypes <- function(target.vec, 
@@ -214,7 +265,10 @@ wrapTypes <- function(target.vec,
                       to.reverse  = FALSE, 
                       bin.width   = NULL,
                       window.size = NULL,
-                      var.name    = NULL) { 
+                      var.name    = NULL,
+                      index.type  = 'Yule') { 
+  tran.vec <- NULL
+  dens.flag <- TRUE
   if (type == "Amounts") {
     tran.vec <- amountFunction(target.vec)
   }
@@ -240,17 +294,46 @@ wrapTypes <- function(target.vec,
     tran.vec <- ranksFunc(target.vec, a = a, b = b)
   }
   if (type == "Ordered Categories") {
-    tran.vec <- orderedCatFunc(target.vec)
+    tran.vec  <- orderedCatFunc(target.vec)
+    dens.flag <- FALSE
   }
-  return(transformList(target.vec = target.vec, 
-                        transform.vec = tran.vec,
-                        a = a, 
-                        b = b,
-                        to.reverse = to.reverse,
-                        bin.width = bin.width,
-                        window.size = window.size,
-                        var.name = var.name))
+  if (type %in% c("Binary (categories)" ,"Category")) { 
+    tran.vec  <- NULL 
+    dens.flag <- FALSE
+  }  
+  if (type == "To Be Determined") {
+    return("Cant Plot")
+  }
+  if (to.reverse == TRUE) {
+    tran.vec <- c(tran.vec, "to.reverse")
+  }
+  ## Arranging Data 
+  transform.list <- transformList(target.vec = target.vec, 
+                                  transform.vec = tran.vec,
+                                  a = a, 
+                                  b = b)
+  ## Calculating Index 
+  index.list     <- createIndex(transform.list, index = index.type)
+  ## Sorting 
+  transform.list <- transform.list[index.list[['Order']]]
+  ## Plotting 
+  plot.list     <- plotTransform(transform.list = transform.list, 
+                                 var.name = var.name,
+                                 bin.width = bin.width,
+                                 window.size.plot = window.size,
+                                 KDE = dens.flag, 
+                                 ind.vec = index.list[['Index']],
+                                 ind.name = index.list[['Name']] ) 
+  return(list('Transformations' = transform.list, 'Plots' = plot.list, 'Index' = index.list))
 }
+
+
+
+###########################
+
+###########################
+# Guessing Functions  -----------------------------------------------------
+
 
 ## Automatic VarType guesser 
 ## Cant guess ordered categories or any type of bounded variable 
@@ -317,13 +400,14 @@ WrapGuess <- function(file) {
 }
 
 
-## Binwidth Calculater based on Freedman Diaconis 
-BinWidthHist <- function(x) { 
-  return((2 * IQR(x, na.rm = TRUE) / length(na.omit(x))^(1 / 3)))
-}
 
-## Binwidth for density based on bw.nrd0 of base R 
-BinWidthDens <- function(x) { 
-  return(bw.nrd0(na.omit(x)))
-}
+## Testing 
+
+wrapTypes(rnorm(100), type = "Amounts",var.name = "Tzvikush")
+
+
+###########################
+
+
+
 
