@@ -14,6 +14,9 @@ createIndex <- function(transform.list, index = 'Yule') {
   if (index == 'Yule') { 
     yul.ind   <- unlist(lapply(transform.list, yuleIndex))
     names(yul.ind) <- names(transform.list)
+    if (length(yul.ind) == 1) {
+      return(list('Index' = yul.ind, 'Order' = 1, 'Name' = index))
+    }
     ord.ind <- c(1, order(abs(yul.ind[2:length(yul.ind)])) + 1)
     return(list('Index' = yul.ind, 'Order' = ord.ind, 'Name' = index))  
   }
@@ -173,7 +176,7 @@ plotTransform <- function(transform.list,
   if (is.null(bin.width.plot)) { 
     bin.size <- unlist(lapply(transform.list, BinWidthHist))
   } 
-  if (is.null(window.size.plot)) { 
+  if (is.null(window.size.plot) && KDE == T) { 
     win.size <- unlist(lapply(transform.list, BinWidthDens))
   }
   plot.list <- list()
@@ -181,11 +184,11 @@ plotTransform <- function(transform.list,
   p       <- length(transform.list)
   for (i in 1:p) { 
     temp.plot <- ggplot(df.list[[i]], aes_string(x = names(df.list[[i]]))) +
-      geom_histogram(aes(y=..density..), binwidth = win.size[i]) + 
+      geom_histogram(aes(y=..density..), binwidth = bin.size[i]) + 
       ggtitle(paste(var.name, 'Transformation', names(df.list)[i], ind.name, '=', round(ind.vec[i], 4))) + 
       xlab(var.name) 
     if (KDE == T) { 
-      temp.plot <- temp.plot + geom_density(color = 'blue', size = 1.25, bw = bin.size[i]) 
+      temp.plot <- temp.plot + geom_density(color = 'blue', size = 1.25, bw = win.size[i]) 
     }
     plot.list[[i]] <- temp.plot
   }
@@ -278,7 +281,7 @@ wrapTypes <- function(target.vec,
   if (type == "Ratio") {
     tran.vec <- ratioFunction(target.vec, a = a, b = b)
   }
-  if (type  == "Proportion") {
+  if (type == "Proportion") {
     tran.vec <- ratioFunction(target.vec, a = a, b = b)
   }
   if (type == "Counted Fraction") {
@@ -391,7 +394,7 @@ WrapGuess <- function(file) {
                           'a' = rep(NA ,p), 
                           'b' = rep(NA ,p), 
                           'Type' = rep(NA ,p), 
-                          'To Reverse' = rep(NA ,p))  
+                          'To Reverse' = rep(0 ,p))  
   for (i in 1:p) { 
     guess.dat[i,'Variable'] <- name.vec[i] 
     guess.dat[i,c(2:4)]     <- GuessType(file[ ,i])
@@ -399,15 +402,11 @@ WrapGuess <- function(file) {
   return(guess.dat) 
 }
 
-
-
-## Testing 
-
-wrapTypes(rnorm(100), type = "Amounts",var.name = "Tzvikush")
-
-
 ###########################
 
-
-
-
+###########################
+# Checking  ---------------------------------------------------------------
+# wrapTypes(target.vec = rbinom(100, 1,0.5), type = "Binary (categories)", var.name = 'Tzvikush', to.reverse = TRUE)
+# wrapTypes(target.vec = rnorm(100, 5,0.5), type = "Amounts", var.name = 'Tzvikush')
+# wrapTypes(target.vec = rpois(100, 5), type = "Counts", var.name = 'Tzvikush')
+###########################
