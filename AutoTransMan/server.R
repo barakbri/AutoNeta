@@ -755,9 +755,9 @@ shinyServer(function(input, output, session){
       return_obj = SystemVariables$Graphs_ggplot2_obj_list[[index]]
       if(SystemVariables$Graphs_Nr_Selected == index){
         # need to add selection
-        return_obj = return_obj + theme(panel.border = element_rect(
+        return_obj = return_obj + theme(plot.background = element_rect( #panel.border
                                           size = 3,
-                                          colour = "red",
+                                          colour = "#bcb7a6",
                                           fill = NA
                                         ))
       }
