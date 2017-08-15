@@ -3,7 +3,7 @@ library(shiny)
 # definitions:
 source('definitions.r')
 #version:
-VERSION_SERVER = '20170813'
+VERSION_SERVER = '20170814'
 
 #installing packages
 #if(!("HHG" %in% rownames(installed.packages()))){
@@ -52,7 +52,9 @@ shinyServer(function(input, output, session){
     hasBeenTransformed = NULL,
     Transformation_Used = NULL,
     Transformation_Used_Index = NULL,
-  
+    isExcluded = NULL,
+    isExcluded_Reason = NULL,
+    
     VarDef_table = NULL,
     VarDef_label = NULL,
     VarDef_a = NULL,
@@ -83,12 +85,25 @@ shinyServer(function(input, output, session){
   
   ## GGPLOT items
     
-    Graphs_RefreshNeeded = F,  
+    Graphs_RefreshNeeded = F,
+    Graphs_RefreshInProgress = F,  
     Graphs_Nr_Displayed = NULL,
     Graphs_ggplot2_obj_list = NULL,
     Graphs_display_transformed_data = NULL,
     Graphs_display_transformed_yule = NULL,
-    Graphs_Nr_Selected = -1
+    Graphs_Nr_Selected = -1,
+  
+  ## Sliders:
+  
+    Sliders_need_to_update = F,
+    Slider_BinSize_current_value = NULL,
+    Slider_BinSize_max_value = NULL,
+    Slider_BinSize_min_value = NULL,
+    
+    Slider_KernelWidth_current_value = NULL,
+    Slider_KernelWidth_max_value = NULL,
+    Slider_KernelWidth_min_value = NULL
+    
   )
   
   ###
@@ -138,6 +153,7 @@ shinyServer(function(input, output, session){
       #zeroize graph display
         
       SystemVariables$Graphs_RefreshNeeded = F
+      SystemVariables$Graphs_RefreshInProgress = F
       SystemVariables$Graphs_Nr_Displayed = NULL
       SystemVariables$Graphs_ggplot2_obj_list = NULL
       SystemVariables$Graphs_display_transformed_data = NULL
@@ -262,10 +278,30 @@ shinyServer(function(input, output, session){
         SystemVariables$AfterList_HasFocus = T
       }
     
+    
     #Graphs_RefreshNeeded
     if(SystemVariables$Graphs_RefreshNeeded){
-      Controller_VariableSelected()
+      if(!SystemVariables$Graphs_RefreshInProgress){
+        SystemVariables$Graphs_RefreshInProgress = T
+        Controller_VariableSelected()
+        SystemVariables$Graphs_RefreshInProgress = F  
+      }
     }
+  })
+  
+  observe({
+    
+    if(!is.null(input$graphicalparameter_BinSize) & !is.null(SystemVariables$Slider_BinSize_current_value))
+      if(SystemVariables$Slider_BinSize_current_value != input$graphicalparameter_BinSize){
+        SystemVariables$Sliders_need_to_update = F
+        SystemVariables$Graphs_RefreshNeeded = T
+      }
+    if(!is.null(input$graphicalparameter_KernelWidth) & !is.null(SystemVariables$Slider_KernelWidth_current_value))
+      if(SystemVariables$Slider_KernelWidth_current_value != input$graphicalparameter_KernelWidth){
+        SystemVariables$Sliders_need_to_update = F
+        SystemVariables$Graphs_RefreshNeeded = T
+      }
+    
   })
   
   ###
@@ -279,12 +315,60 @@ shinyServer(function(input, output, session){
   Controller_LoadData = function(){
     
     data_nvar = ncol(SystemVariables$Data_Original)
-    SystemVariables$Original_Yule = abs(apply(SystemVariables$Data_Original,2,yuleIndex))
-    SystemVariables$New_Yule = SystemVariables$Original_Yule
+    SystemVariables$Original_Yule = rep(NA,data_nvar) #abs(apply(SystemVariables$Data_Original,2,yuleIndex))
+    SystemVariables$New_Yule = rep(NA,data_nvar) #SystemVariables$Original_Yule
     SystemVariables$hasBeenTransformed = rep(F,data_nvar)
+    SystemVariables$isExcluded = rep(F,data_nvar)
+    SystemVariables$isExcluded_Reason = rep("",data_nvar)
     SystemVariables$Transformation_Used = rep("None",data_nvar)
     SystemVariables$Transformation_Used_Index = rep(-1,data_nvar)
     SystemVariables$Data_Transformed = SystemVariables$Data_Original
+    
+    
+    # check which dimensions are not castable
+    for(i in 1:data_nvar){
+      vec = SystemVariables$Data_Original[,i]
+      is_numeric = is.numeric(vec)
+      is_NA = is.na(vec)
+      is_NaN = is.nan(vec)
+      
+      is_not_castable = (!is_numeric & !is_NaN & !is_NA)
+      if(sum(is_not_castable)>0){
+        SystemVariables$isExcluded[i] = T  
+        SystemVariables$isExcluded_Reason[i] = UI_LABELS$EXCLUDE_VARIABLE_NOT_NUMERIC
+      }
+    }
+    
+    #cast NANs into NA's
+    for(i in 1:data_nvar){
+      if(!SystemVariables$isExcluded[i]){
+        which_nan = which(is.nan(SystemVariables$Data_Original[,i]))
+        if(length(which_nan>0)){
+          SystemVariables$Data_Original[which_nan,i] = NA
+        }  
+      }
+    }
+    
+    #at least three non NA
+    for(i in 1:data_nvar){
+      if(!SystemVariables$isExcluded[i]){
+        nr_non_NA_values = sum(!is.na(SystemVariables$Data_Original[,i]))
+        if(nr_non_NA_values<3){
+          SystemVariables$isExcluded[i] = T
+          SystemVariables$isExcluded_Reason[i] = UI_LABELS$EXCLUDE_VARIABLE_NOT_ENOUGH_VALUES
+        }
+      }
+    }
+    
+    #now we can safely compute yule, but only for variables which have not been excluded
+    for(i in 1:data_nvar){
+      if(!SystemVariables$isExcluded[i]){
+        SystemVariables$Original_Yule[i] = abs(yuleIndex(SystemVariables$Data_Original[,i]))
+        SystemVariables$New_Yule[i] = SystemVariables$Original_Yule[i]
+      }
+    }
+    
+    
     
   }
   
@@ -297,7 +381,29 @@ shinyServer(function(input, output, session){
     SystemVariables$VarDef_a = SystemVariables$VarDef_table$a
     SystemVariables$VarDef_b = SystemVariables$VarDef_table$b
     SystemVariables$VarDef_type = SystemVariables$VarDef_table$Type
-    SystemVariables$VarDef_reverse = SystemVariables$VarDef_table$'To.Reverse.'
+    SystemVariables$VarDef_reverse = as.numeric(SystemVariables$VarDef_table$To.Reverse)
+    
+    #checks on vardef:
+    if(any(!(SystemVariables$VarDef_type %in% VARIABLE_TYPES))){
+      
+    }
+    
+    if(any(!is.finite(as.numeric(SystemVariables$VarDef_a)))){
+      
+    }
+    
+    if(any(!is.finite(as.numeric(SystemVariables$VarDef_b)))){
+      
+    }
+    
+    if(sum(as.numeric(SystemVariables$VarDef_b)<as.numeric(SystemVariables$VarDef_b), na.rm = T )){
+      
+    }
+    
+    if(any(!(SystemVariables$VarDef_reverse %in% c(0,1)))){
+      
+      
+    }
   }
   
   # Function for computation of list variables,
@@ -322,7 +428,12 @@ shinyServer(function(input, output, session){
       before_original_yules = before_original_yules[ord]
       
       for(i in 1:length(ord)){
-        SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "(yule:", round(before_original_yules[i],3),")")
+        if(SystemVariables$isExcluded[SystemVariables$BeforeList_Indices_of_var[i]]){
+          SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], UI_LABELS$LIST_EXCLUDED)  
+        }else{
+          SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "( Yule:", round(before_original_yules[i],3),")")  
+        }
+        
       }
       
     }
@@ -331,6 +442,15 @@ shinyServer(function(input, output, session){
     SystemVariables$AfterList_Indices_of_var = ind_after
     SystemVariables$AfterList_HasBeenTransformed = SystemVariables$hasBeenTransformed[ind_after]
     SystemVariables$AfterList_Labels = colnames(SystemVariables$Data_Original)[ind_after]
+    
+    if(length(SystemVariables$AfterList_Labels)>0){
+      for(i in 1:length(SystemVariables$AfterList_Labels)){
+        if(SystemVariables$isExcluded[SystemVariables$AfterList_Indices_of_var[i]]){
+          SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i], UI_LABELS$LIST_EXCLUDED)
+        }
+      }  
+    }
+    
     
     
     #populate lists
@@ -363,7 +483,7 @@ shinyServer(function(input, output, session){
     }
     if(SystemVariables$Version_Server != VERSION_SERVER){
       showModal(modalDialog(
-        title = "Warning: Possible Save File Server Mismatch!",
+        title = "Warning: Possible Save File Mismatch!",
         paste0('Server Version:',VERSION_SERVER,',',' Save File Version: ',SystemVariables$Version_Server)
       ))
     }
@@ -394,6 +514,10 @@ shinyServer(function(input, output, session){
     SystemVariables$Graphs_display_transformed_yule = NULL
     SystemVariables$Graphs_Nr_Selected = -1
     
+    SystemVariables$Sliders_need_to_update = F
+    SystemVariables$Slider_BinSize_current_value = NULL
+    SystemVariables$Slider_KernelWidth_current_value = NULL
+
     # recompute lists, also set them to be not selected
     Controller_ComputeList()
     
@@ -404,6 +528,7 @@ shinyServer(function(input, output, session){
   # Function for computation of tranformation, storing them in data etc
   # from current data state:
   # - get current index of selected from before or after lists/ need to find out
+  # - if needed update sliders, else, get kernel width and bin size from sliders
   # - call transofrmation manager:
   #     by var type select list of transformations
   #     compute transformations + yule
@@ -416,57 +541,114 @@ shinyServer(function(input, output, session){
 
     if(SystemVariables$BeforeList_HasFocus & SystemVariables$BeforeList_IndexSelected!=-1){
       SystemVariables$Variable_Selected = T
+      
+      
+      if(SystemVariables$Variable_Selected_IndexOf != SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]){
+        SystemVariables$Sliders_need_to_update = T
+      }else{
+        #changes by the two modes of accessing this function, lists or slider
+      }
+      
       SystemVariables$Variable_Selected_IndexOf = SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]
+            
       #remember to zeroize selection on the after list, otherwise we will not bet able to reselect it
       Controller_Update_AfterList()
+      
     }
     if(SystemVariables$AfterList_HasFocus & SystemVariables$AfterList_IndexSelected!=-1){
-      SystemVariables$Variable_Selected =T
+      if(SystemVariables$Variable_Selected_IndexOf != SystemVariables$AfterList_Indices_of_var[SystemVariables$AfterList_IndexSelected]){
+        SystemVariables$Sliders_need_to_update = T  
+        
+      }else{
+        
+      }
+      
+      SystemVariables$Graphs_Nr_Selected   =  SystemVariables$Transformation_Used_Index[SystemVariables$Variable_Selected_IndexOf]  
       SystemVariables$Variable_Selected_IndexOf = SystemVariables$AfterList_Indices_of_var[SystemVariables$AfterList_IndexSelected]
-      SystemVariables$Graphs_Nr_Selected   =  SystemVariables$Transformation_Used_Index[SystemVariables$Variable_Selected_IndexOf]
+      
+      SystemVariables$Variable_Selected =T
+      
       
       #remember to zeroize selection on the before list, otherwise we will not bet able to reselect it
       Controller_Update_BeforeList()
-      
     }
+    
     
     #calling transformation functions, and storing results:
     ind_selected = SystemVariables$Variable_Selected_IndexOf
+    ind_of_var_in_vardef = which(SystemVariables$VarDef_label == colnames(SystemVariables$Data_Original)[ind_selected])
     transformations_obj = NULL
-    transformations_obj = try(
-        wrapTypes(
-        target.vec = SystemVariables$Data_Original[,ind_selected],
-        type = "Amounts",#as.character(SystemVariables$VarDef_type[ind_selected]),
-        a = SystemVariables$VarDef_a[ind_selected],
-        b = SystemVariables$VarDef_b[ind_selected],
-        #to.reverse  = FALSE#, 
-        #bin.width   = NULL,
-        #window.size = NULL,
-        #var.name    = NULL,
-        )
-      )
-    if(!is.null(transformations_obj)){
-      transformation_names = names(transformations_obj$Transformations$Transformations)
-      #save into System variables
-      SystemVariables$Graphs_ggplot2_obj_list  = transformations_obj$Plots
-      SystemVariables$Graphs_display_transformed_data  = transformations_obj$Transformations$Transformations
-      SystemVariables$Graphs_display_transformed_yule   = transformations_obj$Transformations$`Yule Index` 
-      
-      #no graph selected after redraw
-      if(SystemVariables$BeforeList_HasFocus)
-      SystemVariables$Graphs_Nr_Selected = -1
-      
+    bin_type_parameter = NULL
+    kernel_width_parameter = NULL
+    
+    if(SystemVariables$isExcluded[ind_selected]){
+      SystemVariables$Graphs_ggplot2_obj_list = NULL
+      SystemVariables$Graphs_display_transformed_data = NULL
+      SystemVariables$Graphs_display_transformed_yule = NULL
       SystemVariables$Graphs_RefreshNeeded = F
-      
-      SystemVariables$StatusLineString = paste0(
-        colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf],
-        " selected")  
-    }else{
-      SystemVariables$StatusLineString = ""
-      SystemVariables$ErrorLineString = paste0("Cannot transform ",colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf])
+      showModal(modalDialog(
+        title = MSGS$MSG_VARIABLE_EXCLUDED_TITLE,
+        paste0(MSGS$MSG_VARIABLE_EXCLUDED_BODY, '\n',
+               SystemVariables$isExcluded_Reason[ind_selected])
+      ))
+      return(FALSE)
     }
     
+    #do not take dependecy on slider varibles!
+    isolate({
+          SystemVariables$Slider_BinSize_current_value = input$graphicalparameter_BinSize
+          SystemVariables$Slider_KernelWidth_current_value = input$graphicalparameter_KernelWidth
+    })
+    bin_type_parameter = input$graphicalparameter_BinSize
+    kernel_width_parameter = input$graphicalparameter_KernelWidth
+       
     
+    if(length(ind_of_var_in_vardef) == 1){
+      transformations_obj = tryCatch(
+        wrapTypes(
+          target.vec = SystemVariables$Data_Original[,ind_selected],
+          type = as.character(SystemVariables$VarDef_type[ind_of_var_in_vardef]),
+          a = SystemVariables$VarDef_a[ind_of_var_in_vardef],
+          b = SystemVariables$VarDef_b[ind_of_var_in_vardef],
+          to.reverse  = SystemVariables$VarDef_reverse[ind_of_var_in_vardef], 
+          bin.width   = bin_type_parameter,
+          window.size = kernel_width_parameter,
+          var.name    = colnames(SystemVariables$Data_Original)[ind_selected],
+          index.type = INDICES_FOR_ASYMMETRY$YULE
+        ),error = function(e){SystemVariables$ErrorLineString = "Error in Transformations";NULL}
+      )
+      if(!is.null(transformations_obj)){
+        SystemVariables$ErrorLineString = ''
+        transformation_names = names(transformations_obj$Transformations$Transformations)
+        #save into System variables
+        SystemVariables$Graphs_ggplot2_obj_list  = transformations_obj$Plots
+        SystemVariables$Graphs_display_transformed_data  = transformations_obj$Transformations$Transformations
+        SystemVariables$Graphs_display_transformed_yule   = transformations_obj$Transformations$`Yule Index` 
+        
+        #no graph selected after redraw
+        if(SystemVariables$BeforeList_HasFocus)
+          SystemVariables$Graphs_Nr_Selected = -1
+        
+        SystemVariables$Graphs_RefreshNeeded = F
+        
+        SystemVariables$StatusLineString = paste0(
+          colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf],
+          " selected")  
+      }else{
+        SystemVariables$StatusLineString = ""
+        SystemVariables$ErrorLineString = paste0("Cannot transform ",colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf])
+      }
+    }
+    if(length(ind_of_var_in_vardef) != 1){
+      SystemVariables$Graphs_ggplot2_obj_list = NULL
+      SystemVariables$Graphs_display_transformed_data = NULL
+      SystemVariables$Graphs_display_transformed_yule = NULL
+      SystemVariables$Graphs_RefreshNeeded = F
+      showModal(modalDialog(
+        title = MSGS$MSG_VAR_NOT_IN_VARDEF_TITLE,
+        MSGS$MSG_VAR_NOT_IN_VARDEF_BODY
+      ))
+    }
   }
   
   
@@ -601,8 +783,7 @@ shinyServer(function(input, output, session){
   ###
   # Additional Pages & Actions
   ###
-  
-  
+
   output$Page_Help = renderUI({
     HTML("HELP PAGE HERE")
   })
@@ -610,9 +791,7 @@ shinyServer(function(input, output, session){
   output$Page_About = renderUI({
     HTML("HELP ABOUT HERE")
   })
-  
-  
-  
+
 })
 
 
