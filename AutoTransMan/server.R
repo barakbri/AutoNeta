@@ -4,11 +4,6 @@ library(shiny)
 source('definitions.r')
 
 
-#installing packages
-#if(!("HHG" %in% rownames(installed.packages()))){
-#  install.packages('HHG')
-#}
-
 # load source for transformation library:
  source('Function Project.R')
 
@@ -20,16 +15,17 @@ shinyServer(function(input, output, session){
   # Variable Defenitions:
   ###
   SystemVariables <- reactiveValues(
-    Version_Server = VERSION_SERVER,
-    StatusLineString = STATUS_LINE_MSGS$INIT,
-    ErrorLineString = "",
+    
+    Version_Server = VERSION_SERVER, #Version for server, taken on load
+    StatusLineString = STATUS_LINE_MSGS$INIT, #status line string
+    ErrorLineString = "", #used for displaying error messages
     
   # reference to files being loaded
     WorkSpaceFileName = NULL,
     workSpaceIsLoaded = F,
   
-  # Data/Model variables
-    
+  # Data/Model variables - This section is a part of the 'Model' part of the program
+  # this part is saved and loaded on workspace save/load actions (except for XXX_FILE fields)
     Data_File = NULL,
     Data_FileName = NULL,
     Data_Is_Loaded = F,
@@ -42,8 +38,8 @@ shinyServer(function(input, output, session){
     
     
   
-  # Data variables
-  
+  # Data variables - This section is a part of the 'Model' part of the program
+  # this part is saved and loaded on workspace save/load actions
     Data_Original = NULL,
     Data_Transformed = NULL,
     Original_Yule = NULL,
@@ -61,8 +57,11 @@ shinyServer(function(input, output, session){
     VarDef_type = NULL,
     VarDef_reverse = NULL,
     
-    VarDef_Guess = NULL,
-  #Lists variables
+    # used to hold the table for auto-generated variable definitions
+    VarDef_Guess = NULL, 
+  
+  #Lists variables  - This section is used to update the viewer (what the lists holds)
+  # also contains controller variables: indicators for if refresh and selection
   
     Lists_RefreshNeeded = F,  
   
@@ -84,6 +83,8 @@ shinyServer(function(input, output, session){
   
   
   ## GGPLOT items
+   # contains the list of displayed graphs, along with a flag (lock) if plot is in progress.
+   # contains the list of current transformations displayed, along with their recomputed yule
     
     Graphs_RefreshNeeded = F,
     Graphs_RefreshInProgress = F,  
@@ -95,14 +96,14 @@ shinyServer(function(input, output, session){
   
   ## Sliders:
   
-    Sliders_need_to_update = F,
-    Slider_BinSize_current_value = NULL,
-    Slider_BinSize_max_value = NULL,
-    Slider_BinSize_min_value = NULL,
+    Sliders_need_to_update = F, # deprecated? I think this could be removed
+    Slider_BinSize_current_value = NULL, #current displayed value of slider - used to check if a change has occured
+    Slider_BinSize_max_value = NULL,# deprecated? I think this could be removed
+    Slider_BinSize_min_value = NULL,# deprecated? I think this could be removed
     
-    Slider_KernelWidth_current_value = NULL,
-    Slider_KernelWidth_max_value = NULL,
-    Slider_KernelWidth_min_value = NULL
+    Slider_KernelWidth_current_value = NULL, #current displayed value of slider - used to check if a change has occured
+    Slider_KernelWidth_max_value = NULL,# deprecated? I think this could be removed
+    Slider_KernelWidth_min_value = NULL# deprecated? I think this could be removed
     
   )
   
@@ -140,6 +141,8 @@ shinyServer(function(input, output, session){
   #observer - when the apply transformation button is clicked
   observeEvent(input$button_Apply,{
     if('button_Apply' %in% names(input)){
+      #store the current transformation and values (yule, trans number and name)
+      #for the variable viewed
       nr_trans_selected = SystemVariables$Graphs_Nr_Selected
       nr_var_viewed = SystemVariables$Variable_Selected_IndexOf
       SystemVariables$Data_Transformed[,nr_var_viewed] = SystemVariables$Graphs_display_transformed_data[[nr_trans_selected]]
@@ -163,6 +166,7 @@ shinyServer(function(input, output, session){
        #refresh lists
        Controller_ComputeList()
        
+       #show the top of the before list
        SystemVariables$BeforeList_IndexSelected = 1
        SystemVariables$AfterList_IndexSelected = -1
        SystemVariables$BeforeList_HasFocus = T
@@ -172,13 +176,11 @@ shinyServer(function(input, output, session){
        SystemVariables$Variable_Selected_IndexOf = SystemVariables$BeforeList_Indices_of_var[1]
        SystemVariables$Graphs_Nr_Selected = -1
        
+       #select the top item in the before list
        Controller_Update_BeforeList(1)
        Controller_Update_AfterList()
       
-       
-      #
-      
-      
+       #replot
        Controller_VariableSelected()
       
       SystemVariables$StatusLineString = STATUS_LINE_MSGS$TRANSFORMATION_APPLIED
@@ -269,6 +271,7 @@ shinyServer(function(input, output, session){
     if('ui_list_After' %in% names(input))
       current_index_after_list = which(input$ui_list_After == SystemVariables$AfterList_Labels)
 
+    #check for a change on the before list
     if(length(current_index_before_list)>0)
       if(SystemVariables$BeforeList_IndexSelected != current_index_before_list){
         SystemVariables$BeforeList_IndexSelected = current_index_before_list
@@ -277,6 +280,7 @@ shinyServer(function(input, output, session){
         SystemVariables$AfterList_HasFocus = F
       }
     
+    #check for a change on the after list
     if(length(current_index_after_list)>0)
       if(SystemVariables$AfterList_IndexSelected != current_index_after_list){
         SystemVariables$AfterList_IndexSelected = current_index_after_list
@@ -296,13 +300,15 @@ shinyServer(function(input, output, session){
     }
   })
   
+  #handle a replot, on a change of sliders
   observe({
-    
+    #check for change on the Bin Size Slider
     if(!is.null(input$graphicalparameter_BinSize) & !is.null(SystemVariables$Slider_BinSize_current_value))
       if(SystemVariables$Slider_BinSize_current_value != input$graphicalparameter_BinSize){
         SystemVariables$Sliders_need_to_update = F
         SystemVariables$Graphs_RefreshNeeded = T
       }
+    #check for change on the Kernel Width Slider
     if(!is.null(input$graphicalparameter_KernelWidth) & !is.null(SystemVariables$Slider_KernelWidth_current_value))
       if(SystemVariables$Slider_KernelWidth_current_value != input$graphicalparameter_KernelWidth){
         SystemVariables$Sliders_need_to_update = F
@@ -318,9 +324,11 @@ shinyServer(function(input, output, session){
   # load function used for loading and checking data:
   # load into data transformed from  data original
   # compute all yule indices
-  # if an error occured, display error
+  # exclude variables which are not purely numeric or have less than three numeric values
+  # converts NaNs to NAs
   Controller_LoadData = function(){
     
+    #init model variables
     data_nvar = ncol(SystemVariables$Data_Original)
     SystemVariables$Original_Yule = rep(NA,data_nvar) #abs(apply(SystemVariables$Data_Original,2,yuleIndex))
     SystemVariables$New_Yule = rep(NA,data_nvar) #SystemVariables$Original_Yule
@@ -391,6 +399,8 @@ shinyServer(function(input, output, session){
     SystemVariables$VarDef_reverse = as.numeric(SystemVariables$VarDef_table$To.Reverse)
     
     #checks on vardef:
+    
+    #Check variable types - display MSG on problem
     if(any(!(SystemVariables$VarDef_type %in% VARIABLE_TYPES))){
       showModal(modalDialog(
         title = MSGS$MSG_VARDEF_CHECK_TYPENOTFOUND_TITLE,
@@ -398,6 +408,7 @@ shinyServer(function(input, output, session){
       ))
     }
     
+    #Check a's - to be numeric
     if(any(!is.finite(as.numeric(SystemVariables$VarDef_a)))){
       showModal(modalDialog(
         title = MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_A_TITLE,
@@ -406,6 +417,7 @@ shinyServer(function(input, output, session){
       SystemVariables$VarDef_Is_Error  = T 
     }
     
+    #Check b's - to be numeric
     if(any(!is.finite(as.numeric(SystemVariables$VarDef_b)))){
       showModal(modalDialog(
         title = MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_B_TITLE,
@@ -414,6 +426,7 @@ shinyServer(function(input, output, session){
       SystemVariables$VarDef_Is_Error  = T 
     }
     
+    #check b>a
     if(sum(as.numeric(SystemVariables$VarDef_b)<as.numeric(SystemVariables$VarDef_b), na.rm = T )){
       showModal(modalDialog(
         title = MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_ABORDER_TITLE,
@@ -422,6 +435,7 @@ shinyServer(function(input, output, session){
       SystemVariables$VarDef_Is_Error  = T 
     }
     
+    #check to.reverse is in c(0,1)
     if(any(!(SystemVariables$VarDef_reverse %in% c(0,1)))){
       showModal(modalDialog(
         title = MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_TOREVERSE01_TITLE,
@@ -433,9 +447,11 @@ shinyServer(function(input, output, session){
   
   # Function for computation of list variables,
   # from current data state:
-  # generate lists of vars, colors, labels,
+  # generate lists of vars, labels,
   # order lists
   # populate lists
+  # labels contain the yule value for the before list, and
+  # chosen transformation of the after list
   Controller_ComputeList = function(){
     SystemVariables$BeforeList_OrderBy_Yule  = input$checkbox_sort_by_yule
     ind_before = which(SystemVariables$hasBeenTransformed == F)
@@ -444,6 +460,7 @@ shinyServer(function(input, output, session){
     SystemVariables$BeforeList_Indices_of_var = ind_before
     SystemVariables$BeforeList_Labels = colnames(SystemVariables$Data_Original)[ind_before]
     
+    #order by yule indexon the before list, if needed
     if(SystemVariables$BeforeList_OrderBy_Yule == T){
       #need to do sort
       before_original_yules = SystemVariables$Original_Yule[ind_before]
@@ -459,6 +476,16 @@ shinyServer(function(input, output, session){
           SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "( Yule:", round(before_original_yules[i],3),")")  
         }
         
+      }
+      
+    }
+    
+    #add type - excluded
+    for(i in 1:length(ord)){
+      if(SystemVariables$isExcluded[SystemVariables$BeforeList_Indices_of_var[i]]){
+        SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], UI_LABELS$LIST_EXCLUDED)  
+      }else{
+        SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "( Yule:", round(before_original_yules[i],3),")")  
       }
       
     }

@@ -31,7 +31,7 @@ MSGS$MSG_CANNOT_EXPORT_TITLE = "Cannot Export Data"
 MSGS$MSG_CANNOT_EXPORT_BODY = "Cannot Export Data - No Data Has Been Loaded"
 MSGS$MSG_CANNOT_DOWNLOAD_TITLE = "Cannot Download VarType Estimation"
 MSGS$MSG_CANNOT_DOWNLOAD_BODY = "Cannot Download VarType Estimation - No Data Was Uploaded"
-MSGS$DISCLAIMER = "The suggested var types are in the sole responsability of the user, and require their discretion."
+MSGS$DISCLAIMER = "Note: The suggested variable types are in the sole responsability of the user, and require their discretion. Please consult the user manual for the meaning of each variable type definition."
 
 MSGS$MSG_VAR_NOT_IN_VARDEF_TITLE = "Cannot display variable"
 MSGS$MSG_VAR_NOT_IN_VARDEF_BODY = "Cannot display variable, no line \n found for variable in vardef file"

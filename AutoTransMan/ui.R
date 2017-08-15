@@ -115,7 +115,8 @@ tabPanel(UI_LABELS$TAB_GENERATE_VARDEF,
                                                accept=c('text/csv', 
                                                         'text/comma-separated-values,text/plain', 
                                                         '.csv')),
-             uiOutput("ui_download_generated_vardef")),
+             uiOutput("ui_download_generated_vardef"),
+             h4(MSGS$DISCLAIMER)),
                        mainPanel())),
 
 
