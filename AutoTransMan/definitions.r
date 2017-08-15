@@ -14,6 +14,9 @@ FIELDS_TO_SAVE_LIST = c('Version_Server','Data_File','Data_FileName','Data_Is_Lo
 MSGS = list()
 MSGS$MSG_CANNOT_EXPORT_TITLE = "Cannot Export Data"
 MSGS$MSG_CANNOT_EXPORT_BODY = "Cannot Export Data - No Data Has Been Loaded"
+MSGS$MSG_CANNOT_DOWNLOAD_TITLE = "Cannot Download VarType Estimation"
+MSGS$MSG_CANNOT_DOWNLOAD_BODY = "Cannot Download VarType Estimation - No Data Was Uploaded"
+MSGS$DISCLAIMER = "The suggested var types are in the sole responsability of the user, and require their discretion."
 
 STATUS_LINE_MSGS = list()
 STATUS_LINE_MSGS$INIT = "INIT"

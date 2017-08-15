@@ -40,7 +40,7 @@ shinyServer(function(input, output, session){
     VarDef_FileName = NULL,
     VarDef_Is_Loaded = F,
     VarDef_Is_Error = F,
-  
+    
     
   
   # Data variables
@@ -59,7 +59,8 @@ shinyServer(function(input, output, session){
     VarDef_b = NULL, 
     VarDef_type = NULL,
     VarDef_reverse = NULL,
-  
+    
+    VarDef_Guess = NULL,
   #Lists variables
   
     Lists_RefreshNeeded = F,  
@@ -612,7 +613,40 @@ shinyServer(function(input, output, session){
   })
   
   
+  ### Var guesser 
+  ## Disable download button 
+  #Observer - check if data is loaded
+  observe({
+    #Check if Data is loaded
+    #get current references to files
+    File_Data_Guess <- input$file_varGuess
+    if (!is.null(input$file_varGuess)) {
+      Temp_File  <- read.csv(File_Data_Guess$datapath)
+      SystemVariables$VarDef_Guess <- WrapGuess(Temp_File)
+      shinyjs::enable("downloadGuess")
+
+    }
+  })
+  # 
+   
+  output$downloadGuess <- downloadHandler( 
+    filename = function() {
+      paste("GuessVarType_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+        write.csv(SystemVariables$VarDef_Guess, file = file)
+    },
+    contentType = "text/csv"
+    ) 
+  
+  output$ui <- renderUI({
+    if (!is.null(input$file_varGuess)) {
+      downloadButton('downloadGuess', 'Download')
+      
+    }
+  })
   
 })
+
 
 

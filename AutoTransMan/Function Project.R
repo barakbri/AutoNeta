@@ -163,21 +163,18 @@ BinWidthDens <- function(x) {
   return(bw.nrd0(na.omit(x)))
 }
 
-
 ## Plotting 
 plotTransform <- function(transform.list, 
                           var.name = NULL, 
-                          bin.width.plot = NULL, 
-                          window.size.plot = NULL,
+                          bin.width.plot = 1, 
+                          window.size.plot = 1,
                           KDE = T,
                           ind.vec,
                           ind.name = NULL) { 
   ## Dealing with sizes (KDE, binwidth )
-  if (is.null(bin.width.plot)) { 
-    bin.size <- unlist(lapply(transform.list, BinWidthHist))
-  } 
-  if (is.null(window.size.plot) && KDE == T) { 
-    win.size <- unlist(lapply(transform.list, BinWidthDens))
+  bin.size   <- unlist(lapply(transform.list, BinWidthHist)) * bin.width.plot 
+  if (KDE == T) { 
+    win.size <- unlist(lapply(transform.list, BinWidthDens)) * window.size.plot
   }
   plot.list <- list()
   df.list   <- lapply(transform.list, data.frame)
@@ -185,8 +182,10 @@ plotTransform <- function(transform.list,
   for (i in 1:p) { 
     temp.plot <- ggplot(df.list[[i]], aes_string(x = names(df.list[[i]]))) +
       geom_histogram(aes(y=..density..), binwidth = bin.size[i]) + 
-      ggtitle(paste(var.name, 'Transformation', names(df.list)[i], ind.name, '=', round(ind.vec[i], 4))) + 
-      xlab(var.name) 
+      ggtitle(paste(var.name, '\n Transformation:', names(df.list)[i],
+                    paste0('\n',ind.name), '=', round(ind.vec[i], 4))) + 
+      xlab(var.name) + 
+      theme(plot.title = element_text(hjust = 0.5))
     if (KDE == T) { 
       temp.plot <- temp.plot + geom_density(color = 'blue', size = 1.25, bw = win.size[i]) 
     }
@@ -220,7 +219,7 @@ countFunction <- function(target.vec) {
 }
 
 ## Function for Ratio 
-ratioFunction <- function(target.vec) { 
+ratioFunction <- function(target.vec, a, b) { 
   tran.vec <- c('log')
   return(tran.vec)
 }
@@ -266,8 +265,8 @@ wrapTypes <- function(target.vec,
                       a = min(target.vec, na.rm = T), 
                       b = max(target.vec, na.rm = T),
                       to.reverse  = FALSE, 
-                      bin.width   = NULL,
-                      window.size = NULL,
+                      bin.width   = 1,
+                      window.size = 1,
                       var.name    = NULL,
                       index.type  = 'Yule') { 
   tran.vec <- NULL
@@ -322,7 +321,7 @@ wrapTypes <- function(target.vec,
   ## Plotting 
   plot.list     <- plotTransform(transform.list = transform.list, 
                                  var.name = var.name,
-                                 bin.width = bin.width,
+                                 bin.width.plot = bin.width,
                                  window.size.plot = window.size,
                                  KDE = dens.flag, 
                                  ind.vec = index.list[['Index']],
@@ -394,7 +393,7 @@ WrapGuess <- function(file) {
                           'a' = rep(NA ,p), 
                           'b' = rep(NA ,p), 
                           'Type' = rep(NA ,p), 
-                          'To Reverse' = rep(0 ,p))  
+                          'To.Reverse' = rep(0 ,p))  
   for (i in 1:p) { 
     guess.dat[i,'Variable'] <- name.vec[i] 
     guess.dat[i,c(2:4)]     <- GuessType(file[ ,i])
@@ -406,7 +405,9 @@ WrapGuess <- function(file) {
 
 ###########################
 # Checking  ---------------------------------------------------------------
-# wrapTypes(target.vec = rbinom(100, 1,0.5), type = "Binary (categories)", var.name = 'Tzvikush', to.reverse = TRUE)
-# wrapTypes(target.vec = rnorm(100, 5,0.5), type = "Amounts", var.name = 'Tzvikush')
-# wrapTypes(target.vec = rpois(100, 5), type = "Counts", var.name = 'Tzvikush')
+wrapTypes(target.vec = rbinom(100, 1,0.5), type = "Binary (categories)", bin.width = 0.1,var.name = 'Tzvikush', to.reverse = TRUE)
+wrapTypes(target.vec = rnorm(100, 5,0.5), type = "Amounts", var.name = 'Tzvikush', bin.width = 0.1)
+wrapTypes(target.vec = rpois(100, 5), type = "Counts", var.name = 'Tzvikush')
+wrapTypes(target.vec = rpois(100, 5) / 10, type = "Ratio", var.name = 'Tzvikush')
+
 ###########################
