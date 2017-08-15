@@ -83,10 +83,10 @@ shinyUI(
     ###**************************************
     fluidRow(
       column(6,sliderInput("graphicalparameter_BinSize", UI_LABELS$SLIDER_BIN_SIZE,
-                           min = 0, max = 2, value = 1,width = '85%',sep='',step = 0.1
+                           min = SLIDER_BINSIZE_MIN_MULTIPLIER, max = SLIDER_BINSIZE_MAX_MULTIPLIER, value = 1,width = '85%',sep='',step = 0.1
       )),
       column(6,sliderInput("graphicalparameter_KernelWidth", UI_LABELS$SLIDER_KDE_WIDTH,
-                          min = 0, max = 2, value = 1,width = '85%',sep='',step = 0.1
+                          min = SLIDER_KERNELWIDTH_MIN_MULTIPLIER, max = SLIDER_KERNELWIDTH_MAX_MULTIPLIER, value = 1,width = '85%',sep='',step = 0.1
       ))
     )
   )# end of fluid page (upper toolbar, sidebar layout, advanced panel)

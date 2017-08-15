@@ -144,35 +144,43 @@ shinyServer(function(input, output, session){
       nr_trans_selected = SystemVariables$Graphs_Nr_Selected
       nr_var_viewed = SystemVariables$Variable_Selected_IndexOf
       SystemVariables$Data_Transformed[,nr_var_viewed] = SystemVariables$Graphs_display_transformed_data[[nr_trans_selected]]
-      SystemVariables$New_Yule[nr_var_viewed] = SystemVariables$Graphs_display_transformed_yule[[1]][nr_trans_selected]
-      SystemVariables$Transformation_Used[nr_var_viewed] = names(SystemVariables$Graphs_display_transformed_yule[[1]])[nr_trans_selected]
+      SystemVariables$New_Yule[nr_var_viewed] = SystemVariables$Graphs_display_transformed_yule[nr_trans_selected]
+      SystemVariables$Transformation_Used[nr_var_viewed] = names(SystemVariables$Graphs_display_transformed_yule)[nr_trans_selected]
       SystemVariables$Transformation_Used_Index[nr_var_viewed] = nr_trans_selected
       SystemVariables$hasBeenTransformed[nr_var_viewed] = T
       
       
       
       #zeroize graph display
-        
-      SystemVariables$Graphs_RefreshNeeded = F
-      SystemVariables$Graphs_RefreshInProgress = F
-      SystemVariables$Graphs_Nr_Displayed = NULL
-      SystemVariables$Graphs_ggplot2_obj_list = NULL
-      SystemVariables$Graphs_display_transformed_data = NULL
-      SystemVariables$Graphs_display_transformed_yule = NULL
-      SystemVariables$Graphs_Nr_Selected = -1
+
+       SystemVariables$Graphs_RefreshNeeded = F
+       SystemVariables$Graphs_RefreshInProgress = F
+       SystemVariables$Graphs_Nr_Displayed = NULL
+       SystemVariables$Graphs_ggplot2_obj_list = NULL
+       SystemVariables$Graphs_display_transformed_data = NULL
+       SystemVariables$Graphs_display_transformed_yule = NULL
       
-      SystemVariables$Variable_Selected = F
-      SystemVariables$Variable_Selected_IndexOf = -1
+       
+       #refresh lists
+       Controller_ComputeList()
+       
+       SystemVariables$BeforeList_IndexSelected = 1
+       SystemVariables$AfterList_IndexSelected = -1
+       SystemVariables$BeforeList_HasFocus = T
+       SystemVariables$AfterList_HasFocus = F
+       
+       SystemVariables$Variable_Selected = T
+       SystemVariables$Variable_Selected_IndexOf = SystemVariables$BeforeList_Indices_of_var[1]
+       SystemVariables$Graphs_Nr_Selected = -1
+       
+       Controller_Update_BeforeList(1)
+       Controller_Update_AfterList()
       
-      SystemVariables$BeforeList_IndexSelected = -1
-      SystemVariables$AfterList_IndexSelected = 1
-      SystemVariables$BeforeList_HasFocus = F
-      SystemVariables$AfterList_HasFocus = T
+       
+      #
       
-      #refresh lists
       
-      Controller_ComputeList()
-      Controller_VariableSelected()
+       Controller_VariableSelected()
       
       SystemVariables$StatusLineString = STATUS_LINE_MSGS$TRANSFORMATION_APPLIED
     }
@@ -253,7 +261,6 @@ shinyServer(function(input, output, session){
   #Observer -  Refresh Graphs, on any refresh needed (listens to change in variable selection)
   observe({
     
-    #temp = s
     
     current_index_before_list = -1
     current_index_after_list = -1
@@ -446,9 +453,14 @@ shinyServer(function(input, output, session){
     
     if(length(SystemVariables$AfterList_Labels)>0){
       for(i in 1:length(SystemVariables$AfterList_Labels)){
+        
+        SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i], ' - ',SystemVariables$Transformation_Used[SystemVariables$AfterList_Indices_of_var[i]])
+        
         if(SystemVariables$isExcluded[SystemVariables$AfterList_Indices_of_var[i]]){
           SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i], UI_LABELS$LIST_EXCLUDED)
         }
+        
+        
       }  
     }
     
@@ -463,15 +475,15 @@ shinyServer(function(input, output, session){
     SystemVariables$Lists_RefreshNeeded = F
   }
   
-  Controller_Update_BeforeList = function(){
+  Controller_Update_BeforeList = function(selected_item = NULL){
     updateSelectInput(session, "ui_list_Before",label = UI_LABELS$BEFORE_LIST,
-                      choices = SystemVariables$BeforeList_Labels,selected = NULL
+                      choices = SystemVariables$BeforeList_Labels,selected = selected_item
     )
   }
   
-  Controller_Update_AfterList = function(){
+  Controller_Update_AfterList = function(selected_item = NULL){
     updateSelectInput(session, "ui_list_After", label = UI_LABELS$AFTER_LIST,
-                      choices = SystemVariables$AfterList_Labels,selected = NULL
+                      choices = SystemVariables$AfterList_Labels,selected = selected_item
     )
   }
   
@@ -544,11 +556,11 @@ shinyServer(function(input, output, session){
       SystemVariables$Variable_Selected = T
       
       
-      if(SystemVariables$Variable_Selected_IndexOf != SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]){
-        SystemVariables$Sliders_need_to_update = T
-      }else{
-        #changes by the two modes of accessing this function, lists or slider
-      }
+      #if(SystemVariables$Variable_Selected_IndexOf != SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]){
+      #  SystemVariables$Sliders_need_to_update = T
+      #}else{
+      #  #changes by the two modes of accessing this function, lists or slider
+      #}
       
       SystemVariables$Variable_Selected_IndexOf = SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]
             
@@ -557,17 +569,18 @@ shinyServer(function(input, output, session){
       
     }
     if(SystemVariables$AfterList_HasFocus & SystemVariables$AfterList_IndexSelected!=-1){
-      if(SystemVariables$Variable_Selected_IndexOf != SystemVariables$AfterList_Indices_of_var[SystemVariables$AfterList_IndexSelected]){
-        SystemVariables$Sliders_need_to_update = T  
-        
-      }else{
-        
-      }
-      
+      #if(SystemVariables$Variable_Selected_IndexOf != SystemVariables$AfterList_Indices_of_var[SystemVariables$AfterList_IndexSelected]){
+      #  SystemVariables$Sliders_need_to_update = T  
+      #  
+      #}else{
+      #  
+      #}
+
+      SystemVariables$Variable_Selected_IndexOf = SystemVariables$AfterList_Indices_of_var[SystemVariables$AfterList_IndexSelected]      
       SystemVariables$Graphs_Nr_Selected   =  SystemVariables$Transformation_Used_Index[SystemVariables$Variable_Selected_IndexOf]  
-      SystemVariables$Variable_Selected_IndexOf = SystemVariables$AfterList_Indices_of_var[SystemVariables$AfterList_IndexSelected]
       
-      SystemVariables$Variable_Selected =T
+      
+      SystemVariables$Variable_Selected = T
       
       
       #remember to zeroize selection on the before list, otherwise we will not bet able to reselect it
@@ -620,11 +633,11 @@ shinyServer(function(input, output, session){
       )
       if(!is.null(transformations_obj)){
         SystemVariables$ErrorLineString = ''
-        transformation_names = names(transformations_obj$Transformations$Transformations)
+        transformation_names = names(transformations_obj$Transformations)
         #save into System variables
         SystemVariables$Graphs_ggplot2_obj_list  = transformations_obj$Plots
-        SystemVariables$Graphs_display_transformed_data  = transformations_obj$Transformations$Transformations
-        SystemVariables$Graphs_display_transformed_yule   = transformations_obj$Transformations$`Yule Index` 
+        SystemVariables$Graphs_display_transformed_data  = transformations_obj$Transformations
+        SystemVariables$Graphs_display_transformed_yule   = transformations_obj$Index$Index 
         
         #no graph selected after redraw
         if(SystemVariables$BeforeList_HasFocus)
@@ -792,9 +805,10 @@ shinyServer(function(input, output, session){
   output$Page_About = renderUI({
     HTML("HELP ABOUT HERE")
   })
-<<<<<<< HEAD
 
-=======
+  #<<<<<<< HEAD
+
+#=======
   
   
   ### Var guesser 
@@ -807,7 +821,7 @@ shinyServer(function(input, output, session){
     if (!is.null(input$file_varGuess)) {
       Temp_File  <- read.csv(File_Data_Guess$datapath)
       SystemVariables$VarDef_Guess <- WrapGuess(Temp_File)
-      shinyjs::enable("downloadGuess")
+      #shinyjs::enable("downloadGuess")
 
     }
   })
@@ -830,7 +844,7 @@ shinyServer(function(input, output, session){
     }
   })
   
->>>>>>> AutoNeta/master
+#>>>>>>> AutoNeta/master
 })
 
 
