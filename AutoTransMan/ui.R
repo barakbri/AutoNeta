@@ -26,11 +26,11 @@ shinyUI(
                   fluidRow(HTML('</br>')),
                   
                   fluidRow(column(1,img(src="book.png",height = '40px',width = '40px',style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                           column(4,h4(UI_LABELS$EXPORT,style="padding:20px;"),downloadButton("button_Export",UI_LABELS$BUTTON_LABEL_EXPORT_DATA))),
+                           column(4,h4(UI_LABELS$EXPORT,style="padding:20px;"),uiOutput('ui_export_trans_data'))),
                   fluidRow(HTML('</br>')),
                   
                   fluidRow(column(1,img(src="checklist.png",height = '40px',width = '40px',style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                           column(4,h4(UI_LABELS$EXPORT_TRANS,style="padding:20px;"),downloadButton("button_ExportTransReport",UI_LABELS$BUTTON_LABEL_EXPORT_TRANS)))
+                           column(4,h4(UI_LABELS$EXPORT_TRANS,style="padding:20px;"),uiOutput('ui_export_trans_report')))
                 )
                 
             ),
@@ -115,22 +115,27 @@ tabPanel(UI_LABELS$TAB_GENERATE_VARDEF,
                                                accept=c('text/csv', 
                                                         'text/comma-separated-values,text/plain', 
                                                         '.csv')),
-             uiOutput("ui")),
+             uiOutput("ui_download_generated_vardef")),
                        mainPanel())),
 
-#
+
 ###**************************************
 ### Help and About windows
 ###**************************************
 
 navbarMenu(UI_LABELS$HELP_MENU,
            tabPanel(UI_LABELS$HELP_MENU_HELP_ITEM,
-              htmlOutput("Page_Help")      
+              tags$iframe(style="height:900px; width:100%", src="project_help.pdf")      
            ),
            tabPanel(UI_LABELS$HELP_MENU_ABOUT_ITEM,
-              htmlOutput("Page_About")            
+              h3('Semi-Automatic Data Transformation Manager',style = 'align:center;'),
+              h4('Developed by Tzviel Frostig, <tfrostig at gmail dot com> ; '),
+              h4('and Barak Brill, <barakbri at mail dot tau dot ac dot il> ;  '),
+              h4('with additional code by Neta Shachar and Tal Kozlovski'),
+              h4('github page: https://github.com/barakbri/AutoNeta'),
+              h4(paste0('Version: ',VERSION_SERVER))
            )
 )
          
 ) # end of navbarPage
-)#end of ShinyUI
+) # end of ShinyUI

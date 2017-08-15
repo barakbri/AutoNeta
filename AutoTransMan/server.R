@@ -2,8 +2,7 @@ library(shiny)
 
 # definitions:
 source('definitions.r')
-#version:
-VERSION_SERVER = '20170814'
+
 
 #installing packages
 #if(!("HHG" %in% rownames(installed.packages()))){
@@ -393,24 +392,42 @@ shinyServer(function(input, output, session){
     
     #checks on vardef:
     if(any(!(SystemVariables$VarDef_type %in% VARIABLE_TYPES))){
-      
+      showModal(modalDialog(
+        title = MSGS$MSG_VARDEF_CHECK_TYPENOTFOUND_TITLE,
+        MSGS$MSG_VARDEF_CHECK_TYPENOTFOUND_BODY
+      ))
     }
     
     if(any(!is.finite(as.numeric(SystemVariables$VarDef_a)))){
-      
+      showModal(modalDialog(
+        title = MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_A_TITLE,
+        MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_A_BODY
+      ))
+      SystemVariables$VarDef_Is_Error  = T 
     }
     
     if(any(!is.finite(as.numeric(SystemVariables$VarDef_b)))){
-      
+      showModal(modalDialog(
+        title = MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_B_TITLE,
+        MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_B_BODY
+      ))
+      SystemVariables$VarDef_Is_Error  = T 
     }
     
     if(sum(as.numeric(SystemVariables$VarDef_b)<as.numeric(SystemVariables$VarDef_b), na.rm = T )){
-      
+      showModal(modalDialog(
+        title = MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_ABORDER_TITLE,
+        MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_ABORDER_BODY
+      ))
+      SystemVariables$VarDef_Is_Error  = T 
     }
     
     if(any(!(SystemVariables$VarDef_reverse %in% c(0,1)))){
-      
-      
+      showModal(modalDialog(
+        title = MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_TOREVERSE01_TITLE,
+        MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_TOREVERSE01_BODY
+      ))
+      SystemVariables$VarDef_Is_Error  = T 
     }
   }
   
@@ -469,7 +486,6 @@ shinyServer(function(input, output, session){
     #populate lists
     Controller_Update_BeforeList()
     Controller_Update_AfterList()
-   
 
     SystemVariables$StatusLineString = paste0(UI_LABELS$LIST_REFRESH_MSG)
     SystemVariables$Lists_RefreshNeeded = F
@@ -550,17 +566,9 @@ shinyServer(function(input, output, session){
   # - zeroize, selection and redraw falgs.
   # - put label in status bar
   Controller_VariableSelected = function(){
-    
 
     if(SystemVariables$BeforeList_HasFocus & SystemVariables$BeforeList_IndexSelected!=-1){
       SystemVariables$Variable_Selected = T
-      
-      
-      #if(SystemVariables$Variable_Selected_IndexOf != SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]){
-      #  SystemVariables$Sliders_need_to_update = T
-      #}else{
-      #  #changes by the two modes of accessing this function, lists or slider
-      #}
       
       SystemVariables$Variable_Selected_IndexOf = SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]
             
@@ -569,13 +577,7 @@ shinyServer(function(input, output, session){
       
     }
     if(SystemVariables$AfterList_HasFocus & SystemVariables$AfterList_IndexSelected!=-1){
-      #if(SystemVariables$Variable_Selected_IndexOf != SystemVariables$AfterList_Indices_of_var[SystemVariables$AfterList_IndexSelected]){
-      #  SystemVariables$Sliders_need_to_update = T  
-      #  
-      #}else{
-      #  
-      #}
-
+     
       SystemVariables$Variable_Selected_IndexOf = SystemVariables$AfterList_Indices_of_var[SystemVariables$AfterList_IndexSelected]      
       SystemVariables$Graphs_Nr_Selected   =  SystemVariables$Transformation_Used_Index[SystemVariables$Variable_Selected_IndexOf]  
       
@@ -663,14 +665,6 @@ shinyServer(function(input, output, session){
         MSGS$MSG_VAR_NOT_IN_VARDEF_BODY
       ))
     }
-  }
-  
-  
-  # get selected index
-  # change transformed data to selected transformation
-  # recompute list, reselect index from list
-  Controller_TransformationApproved = function(index_of_button){
-    
   }
   
   
@@ -782,13 +776,32 @@ shinyServer(function(input, output, session){
     s
   })
   
+  output$ui_export_trans_data <- renderUI({
+    should_show = SystemVariables$Data_Is_Loaded & SystemVariables$VarDef_Is_Loaded &
+      !SystemVariables$Data_Is_Error & !SystemVariables$VarDef_Is_Error
+    if(should_show){
+      downloadButton("button_Export",UI_LABELS$BUTTON_LABEL_EXPORT_DATA)
+    }else{
+      h4(UI_LABELS$EXPORT_DATA_NOT_READY)
+    }
+    
+  })
+  
+  output$ui_export_trans_report <- renderUI({
+    should_show = SystemVariables$Data_Is_Loaded & SystemVariables$VarDef_Is_Loaded &
+      !SystemVariables$Data_Is_Error & !SystemVariables$VarDef_Is_Error
+    if(should_show){
+      downloadButton("button_ExportTransReport",UI_LABELS$BUTTON_LABEL_EXPORT_TRANS)
+    }else{
+      h4(UI_LABELS$EXPORT_TRANS_NOT_READY)
+    }
+  })
   
   ###
   # Click Handlers
   ###
   
   # Handle Approve Transformation Selection (handlers_per_button)
-  
   handle_Click = function(index){
     if(length(SystemVariables$Graphs_ggplot2_obj_list) >= index)
       SystemVariables$Graphs_Nr_Selected  = index
@@ -797,7 +810,6 @@ shinyServer(function(input, output, session){
   ###
   # Additional Pages & Actions
   ###
-
   output$Page_Help = renderUI({
     HTML("HELP PAGE HERE")
   })
@@ -833,7 +845,7 @@ shinyServer(function(input, output, session){
     contentType = "text/csv"
     ) 
   
-  output$ui <- renderUI({
+  output$ui_download_generated_vardef <- renderUI({
     if (!is.null(input$file_varGuess)) {
       downloadButton('downloadGuess', 'Download')
       

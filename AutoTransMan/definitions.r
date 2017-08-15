@@ -3,6 +3,9 @@
 ##############
 #This is the land of the creatures known as constants:
 
+#version:
+VERSION_SERVER = '20170815'
+
 #This is the list of fields to be loaded, on workspace load
 FIELDS_TO_SAVE_LIST = c('Version_Server','Data_File','Data_FileName','Data_Is_Loaded','Data_Is_Error',
                         'VarDef_File','VarDef_FileName','VarDef_Is_Loaded','VarDef_Is_Error',
@@ -35,6 +38,23 @@ MSGS$MSG_VAR_NOT_IN_VARDEF_BODY = "Cannot display variable, no line \n found for
 
 MSGS$MSG_VARIABLE_EXCLUDED_TITLE = "Cannot display variable"
 MSGS$MSG_VARIABLE_EXCLUDED_BODY = "Variable has been excluded, reason:"
+
+
+MSGS$MSG_VARDEF_CHECK_TYPENOTFOUND_TITLE = "Some Variable Types Invalid"
+MSGS$MSG_VARDEF_CHECK_TYPENOTFOUND_BODY = "Some variable types in selected variable \n definition dont match known types."
+
+MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_A_TITLE = "Parameter \'a\' invalid"
+MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_A_BODY = "Values for parameter \'a\' are not \n strictly numeric."
+
+MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_B_TITLE = "Parameter \'b\' invalid"
+MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_B_BODY = "Values for parameter \'b\' are not \n strictly numeric"
+
+MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_ABORDER_TITLE = "Parameter \'b\' must be >= \'a\' "
+MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_ABORDER_BODY = "Values for parameters must be \'b\' >= \'a\' ."
+
+MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_TOREVERSE01_TITLE = "Field \'To.Reverse\' must be 0 or 1"
+MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_TOREVERSE01_BODY = "Values for field \'To.Reverse\' must be 0 or 1 ."
+
 
 
 STATUS_LINE_MSGS = list()
@@ -78,6 +98,9 @@ UI_LABELS$EXCLUDE_VARIABLE_NOT_NUMERIC = "Variable is not purely numeric."
 UI_LABELS$EXCLUDE_VARIABLE_NOT_ENOUGH_VALUES = " Variable has less then three valid values."
 
 UI_LABELS$LIST_EXCLUDED = " (Excluded)"
+
+UI_LABELS$EXPORT_DATA_NOT_READY = 'Upload data and variable definitions to allow export of transformed data'
+UI_LABELS$EXPORT_TRANS_NOT_READY = 'Upload data and variable definitions to allow export of reported transformations'
 
 #UX/UI constants:
 PLOT_HEIGHT = "280px"
