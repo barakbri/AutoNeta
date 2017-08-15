@@ -445,17 +445,17 @@ WrapGuess <- function(file) {
 
 ###########################
 # Checking  ---------------------------------------------------------------
-wrapTypes(target.vec = rbinom(100, 1,0.5), type = "Binary (categories)", bin.width = 0.1,var.name = 'Tzvikush', to.reverse = TRUE)
-wrapTypes(target.vec = rnorm(100, 5,0.5), type = "Amounts", var.name = 'Tzvikush', bin.width = 1, window.size = 1)
-wrapTypes(target.vec = rpois(100, 5), type = "Counts", var.name = 'Tzvikush')
-wrapTypes(target.vec = rpois(100, 5) / 10, type = "Ratio", var.name = 'Tzvikush')
-
-## Read Data 
-dat <- read.csv('merged_db_CM.csv')
-
-wrapTypes(target.vec = dat$attention_mmse, type = "Bounded counts", bin.width = 1,var.name = 'Tzvikush', to.reverse = F, b =5, a=0)
-wrapTypes(target.vec = dat$MML, type = "Binary (categories)", bin.width = 1,var.name = 'Tzvikush', to.reverse = F, b =1, a=0)
-wrapTypes(target.vec = dat$MMTRIALS, type = "Binary (categories)", bin.width = 1,var.name = 'Tzvikush', to.reverse = F, b =1, a=0)
-
+# wrapTypes(target.vec = rbinom(100, 1,0.5), type = "Binary (categories)", bin.width = 0.1,var.name = 'Tzvikush', to.reverse = TRUE)
+# wrapTypes(target.vec = rnorm(100, 5,0.5), type = "Amounts", var.name = 'Tzvikush', bin.width = 1, window.size = 1)
+# wrapTypes(target.vec = rpois(100, 5), type = "Counts", var.name = 'Tzvikush')
+# wrapTypes(target.vec = rpois(100, 5) / 10, type = "Ratio", var.name = 'Tzvikush')
+# 
+# ## Read Data 
+# dat <- read.csv('merged_db_CM.csv')
+# 
+# wrapTypes(target.vec = dat$attention_mmse, type = "Bounded counts", bin.width = 1,var.name = 'Tzvikush', to.reverse = F, b =5, a=0)
+# wrapTypes(target.vec = dat$MML, type = "Binary (categories)", bin.width = 1,var.name = 'Tzvikush', to.reverse = F, b =1, a=0)
+# wrapTypes(target.vec = dat$MMTRIALS, type = "Binary (categories)", bin.width = 1,var.name = 'Tzvikush', to.reverse = F, b =1, a=0)
+# 
 
 ###########################
