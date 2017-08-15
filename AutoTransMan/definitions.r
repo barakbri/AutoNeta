@@ -7,8 +7,20 @@
 FIELDS_TO_SAVE_LIST = c('Version_Server','Data_File','Data_FileName','Data_Is_Loaded','Data_Is_Error',
                         'VarDef_File','VarDef_FileName','VarDef_Is_Loaded','VarDef_Is_Error',
                         'Data_Original','Data_Transformed','Original_Yule','New_Yule',
-                        'hasBeenTransformed','Transformation_Used','Transformation_Used_Index',
+                        'hasBeenTransformed','Transformation_Used','Transformation_Used_Index','isExcluded','isExcluded_Reason',
                         'VarDef_table','VarDef_label','VarDef_a','VarDef_b','VarDef_type','VarDef_reverse')
+
+VARIABLE_TYPES = c("Amounts","Counts","Ratio","Proportion","Counted Fraction",
+                   "Bounded Amounts","Bounded Counts","Ranks","Ordered Categories",
+                   "Binary (categories)","Category")
+
+INDICES_FOR_ASYMMETRY = list()
+INDICES_FOR_ASYMMETRY$YULE = 'Yule'
+
+SLIDER_BINSIZE_MIN_MULTIPLIER = 0.1
+SLIDER_BINSIZE_MAX_MULTIPLIER = 4
+SLIDER_KERNELWIDTH_MIN_MULTIPLIER = 0.1
+SLIDER_KERNELWIDTH_MAX_MULTIPLIER = 4
 
 #Messages:
 MSGS = list()
@@ -17,6 +29,13 @@ MSGS$MSG_CANNOT_EXPORT_BODY = "Cannot Export Data - No Data Has Been Loaded"
 MSGS$MSG_CANNOT_DOWNLOAD_TITLE = "Cannot Download VarType Estimation"
 MSGS$MSG_CANNOT_DOWNLOAD_BODY = "Cannot Download VarType Estimation - No Data Was Uploaded"
 MSGS$DISCLAIMER = "The suggested var types are in the sole responsability of the user, and require their discretion."
+
+MSGS$MSG_VAR_NOT_IN_VARDEF_TITLE = "Cannot display variable"
+MSGS$MSG_VAR_NOT_IN_VARDEF_BODY = "Cannot display variable, no line \n found for variable in vardef file"
+
+MSGS$MSG_VARIABLE_EXCLUDED_TITLE = "Cannot display variable"
+MSGS$MSG_VARIABLE_EXCLUDED_BODY = "Variable has been excluded, reason:"
+
 
 STATUS_LINE_MSGS = list()
 STATUS_LINE_MSGS$INIT = "INIT"
@@ -48,12 +67,17 @@ UI_LABELS$BUTTON_LABEL_EXPORT_DATA = "Export Transformed Data"
 UI_LABELS$BUTTON_LABEL_EXPORT_TRANS = "Transformation Report"
 UI_LABELS$BUTTON_LABEL_APPLY_TRANSFORMATION = "Apply Transformation"
 
-UI_LABELS$SLIDER_BIN_SIZE = "Bin Size:"
-UI_LABELS$SLIDER_KDE_WIDTH = "KDE Width:"
+UI_LABELS$SLIDER_BIN_SIZE = "Bin Size: (Scale is 0-2)"
+UI_LABELS$SLIDER_KDE_WIDTH = "KDE Width: (Scale is 0-2)"
 
 UI_LABELS$HELP_MENU = "Help"
 UI_LABELS$HELP_MENU_HELP_ITEM = "Help"
 UI_LABELS$HELP_MENU_ABOUT_ITEM = "About"
+
+UI_LABELS$EXCLUDE_VARIABLE_NOT_NUMERIC = "Variable is not purely numeric."
+UI_LABELS$EXCLUDE_VARIABLE_NOT_ENOUGH_VALUES = " Variable has less then three valid values."
+
+UI_LABELS$LIST_EXCLUDED = " (Excluded)"
 
 #UX/UI constants:
 PLOT_HEIGHT = "280px"
