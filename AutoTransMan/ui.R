@@ -132,7 +132,7 @@ navbarMenu(UI_LABELS$HELP_MENU,
               h3('Semi-Automatic Data Transformation Manager',style = 'align:center;'),
               h4('Developed by Tzviel Frostig, <tfrostig at gmail dot com> ; '),
               h4('and Barak Brill, <barakbri at mail dot tau dot ac dot il> ;  '),
-              h4('with additional code by Neta Shachar and Tal Kozlovski'),
+              h4('with additional code by Netta Shachar and Tal Kozlovski'),
               h4('github page: https://github.com/barakbri/AutoNeta'),
               h4(paste0('Version: ',VERSION_SERVER))
            )
