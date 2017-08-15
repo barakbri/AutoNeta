@@ -15,14 +15,26 @@ shinyUI(
              ###**************************************
              
             tabPanel(UI_LABELS$TAB_FILE,
-                fluidPage(fluidRow(column(2,HTML(UI_LABELS$SAVE), downloadButton("button_Save",UI_LABELS$BUTTON_LABEL_SAVE)),
-                                   column(4,HTML(UI_LABELS$LOAD),fileInput("button_Load",UI_LABELS$BUTTON_LABEL_LOAD)),
-                                   column(2,HTML(UI_LABELS$EXPORT),downloadButton("button_Export",UI_LABELS$BUTTON_LABEL_EXPORT_DATA)),
-                                   column(2,HTML(UI_LABELS$EXPORT_TRANS),downloadButton("button_ExportTransReport",UI_LABELS$BUTTON_LABEL_EXPORT_TRANS))
-                ),
-                HTML('<hr style="color: gray;">')
-            )
-          ),
+                fluidPage(
+                  
+                  fluidRow(column(1,img(src="disk.png",height = '40px',width = '40px',style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                           column(4,h4(UI_LABELS$SAVE,style="padding:20px;vertical-align:center;"), downloadButton("button_Save",UI_LABELS$BUTTON_LABEL_SAVE))),
+                  fluidRow(HTML('</br>')),
+                  
+                  fluidRow(column(1,img(src="folder.png",height = '40px',width = '40px',style="margin-top: 25px; display: block; margin-left: auto; margin-right: auto;")),
+                           column(4,h4(UI_LABELS$LOAD,style="padding:20px;"),fileInput("button_Load",UI_LABELS$BUTTON_LABEL_LOAD))),
+                  fluidRow(HTML('</br>')),
+                  
+                  fluidRow(column(1,img(src="book.png",height = '40px',width = '40px',style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                           column(4,h4(UI_LABELS$EXPORT,style="padding:20px;"),downloadButton("button_Export",UI_LABELS$BUTTON_LABEL_EXPORT_DATA))),
+                  fluidRow(HTML('</br>')),
+                  
+                  fluidRow(column(1,img(src="checklist.png",height = '40px',width = '40px',style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                           column(4,h4(UI_LABELS$EXPORT_TRANS,style="padding:20px;"),downloadButton("button_ExportTransReport",UI_LABELS$BUTTON_LABEL_EXPORT_TRANS)))
+                )
+                
+            ),
+          
                         
   ###**************************************
   ### Transform window, main window for app

@@ -806,10 +806,6 @@ shinyServer(function(input, output, session){
     HTML("HELP ABOUT HERE")
   })
 
-  #<<<<<<< HEAD
-
-#=======
-  
   
   ### Var guesser 
   ## Disable download button 
@@ -844,7 +840,6 @@ shinyServer(function(input, output, session){
     }
   })
   
-#>>>>>>> AutoNeta/master
 })
 
 
