@@ -86,6 +86,13 @@ logit <- function(x, const = 1 / 3 , b = 1) {
   return(log((x + const) / (b - x + const)))
 }
 
+
+## Norm Logit 
+norm.logit <- function(x, const = 1 / 3, a = 0, b = 1) { 
+  frac.x <- (x - a) / (b - a)
+  return(logit(frac.x, b = b))
+}
+
 ## Replacing zero with the half the min absolute value of the vector 
 ## Does nothing otherwise
 remZero <- function(x) {
@@ -110,7 +117,7 @@ transformList <- function(target.vec,
     transform.list[['log']] <- log(target.vec.rem.zero) 
   }
   if ('sqrt' %in% transform.vec) { 
-    transform.list[['sqrt']] <- sqrt(target.vec) 
+    transform.list[['sqrt']] <- sqrt(target.vec.rem.zero) 
   }
   if ('invert' %in% transform.vec) { 
     transform.list[['invert']] <- 1 / target.vec.rem.zero
@@ -121,8 +128,8 @@ transformList <- function(target.vec,
   if ('logit' %in% transform.vec) { 
     transform.list[['logit']] <- logit(target.vec, b)
   }
-  if ('norm.logit' %in% transform.vec) { 
-    transform.list[['norm.logit']] <- logit((target.vec - b) / (b - a), b = 1)
+  if ('logit.norm' %in% transform.vec) { 
+    transform.list[['norm.logit']] <- norm.logit(target.vec, a = a, b = b)
   }
   if ('cumulative.entropy' %in% transform.vec) { 
     transform.list[['cumulative.entropy']] <- cumlativeEntropy(target.vec)
@@ -137,7 +144,7 @@ transformList <- function(target.vec,
     transform.list[['inv.sqrt.sixth']] <- 1 / sqrt(target.vec.rem.zero + (1 / 6))
   }
   if ('frac' %in% transform.vec) { 
-    transform.list[['frac']]  <- (target.vec - b) / (b - a)
+    transform.list[['frac']]  <- (target.vec - a) / (b - a)
   }
   if ('to.reverse' %in% transform.vec) {
     transform.list[['to.reverse']] <- b - target.vec 
@@ -155,13 +162,31 @@ transformList <- function(target.vec,
 
 ## Binwidth Calculater based on Freedman Diaconis 
 BinWidthHist <- function(x) { 
-  return((2 * IQR(x, na.rm = TRUE) / length(na.omit(x))^(1 / 3)))
+  bin.width <- (2 * IQR(x, na.rm = TRUE) / length(na.omit(x))^(1 / 3))
+  bin.width <- ifelse(bin.width == 0, 2 / length(na.omit(x))^(1 / 3), bin.width)
+  return(bin.width)
 }
 
 ## Binwidth for density based on bw.nrd0 of base R 
 BinWidthDens <- function(x) { 
   return(bw.nrd0(na.omit(x)))
 }
+
+## Creating a nicer theme for histograms
+themeNice <- function() {
+  theme.list <- list()
+  theme.list[['Theme']] <-   theme_bw() +
+                             theme(axis.line = element_line(size=1, colour = "black"),
+                             panel.grid.major = element_line(colour = "#d3d3d3"),
+                             panel.grid.minor = element_blank(),
+                             panel.border = element_blank(), panel.background = element_blank(),
+                             axis.text.x=element_text(colour="black", size = 12),
+                             axis.text.y=element_text(colour="black", size = 12),
+                             plot.title = element_text(hjust = 0.5))
+  theme.list[['Color']] <- c('Density' = 'firebrick4', 'Hist.Col' = '#1F3552', 'Hist.Fill' = 'slategray3')
+  return(theme.list)
+}
+
 
 ## Plotting 
 plotTransform <- function(transform.list, 
@@ -170,7 +195,8 @@ plotTransform <- function(transform.list,
                           window.size.plot = 1,
                           KDE = T,
                           ind.vec,
-                          ind.name = NULL) { 
+                          ind.name = NULL,
+                          theme = 'Nice') { 
   ## Dealing with sizes (KDE, binwidth )
   bin.size   <- unlist(lapply(transform.list, BinWidthHist)) * bin.width.plot 
   if (KDE == T) { 
@@ -182,12 +208,18 @@ plotTransform <- function(transform.list,
   for (i in 1:p) { 
     temp.plot <- ggplot(df.list[[i]], aes_string(x = names(df.list[[i]]))) +
       geom_histogram(aes(y=..density..), binwidth = bin.size[i]) + 
-      ggtitle(paste(var.name, '\n Transformation:', names(df.list)[i],
+      ggtitle(paste('Transformation:', names(df.list)[i],
                     paste0('\n',ind.name), '=', round(ind.vec[i], 4))) + 
-      xlab(var.name) + 
-      theme(plot.title = element_text(hjust = 0.5))
+      xlab(var.name) + ylab('Density')
+    if (theme == 'Nice')  {
+      temp.plot <- temp.plot + 
+        themeNice()[['Theme']] +
+        geom_histogram(aes(y=..density..), binwidth = bin.size[i], 
+                       colour = themeNice()[['Color']]['Hist.Col'], 
+                       fill = themeNice()[['Color']]['Hist.Fill']) 
+    }
     if (KDE == T) { 
-      temp.plot <- temp.plot + geom_density(color = 'blue', size = 1.25, bw = win.size[i]) 
+      temp.plot <- temp.plot + geom_density(color = themeNice()[['Color']]['Density'], size = 1.25, bw = win.size[i]) 
     }
     plot.list[[i]] <- temp.plot
   }
@@ -215,7 +247,7 @@ amountFunction <- function(target.vec) {
 ## Functions for counts 
 countFunction <- function(target.vec) { 
   tran.vec <- c('log.sixth', 'inv.sqrt.sixth')
-  return( tran.vec)
+  return(tran.vec)
 }
 
 ## Function for Ratio 
@@ -224,6 +256,11 @@ ratioFunction <- function(target.vec, a, b) {
   return(tran.vec)
 }
 
+## Function for Proportion 
+propFunction <- fucntion() {
+  tran.vec <- c('logit') 
+  return(tran.vec)
+}
 
 ## Bounded amount function 
 boundedAmountFunc <- function(target.vec, a, b) { 
@@ -254,6 +291,8 @@ countFracFunction <- function(target.vec, b) {
   tran.vec <- c('logit') 
   return(tran.vec)
 }
+
+
 ###########################
 
 ###########################
@@ -276,12 +315,13 @@ wrapTypes <- function(target.vec,
   }
   if (type == "Counts") {
     tran.vec <- countFunction(target.vec) 
+    dens.flag <- FALSE
   }
   if (type == "Ratio") {
     tran.vec <- ratioFunction(target.vec, a = a, b = b)
   }
   if (type == "Proportion") {
-    tran.vec <- ratioFunction(target.vec, a = a, b = b)
+    tran.vec <- propFunction(target.vec, a = a, b = b)
   }
   if (type == "Counted Fraction") {
     tran.vec <- countFracFunction(target.vec, b = b)
@@ -289,7 +329,7 @@ wrapTypes <- function(target.vec,
   if (type == "Bounded Amounts") {
     tran.vec <- boundedAmountFunc(target.vec, a = a, b = b)
   }
-  if (type == "Bounded Counts") {
+  if (type %in% c("Bounded Counts", "Bounded counts")) {
     tran.vec <- boundedCountFunc(target.vec, a = a, b = b)
   }
   if (type == "Ranks") {
@@ -299,7 +339,7 @@ wrapTypes <- function(target.vec,
     tran.vec  <- orderedCatFunc(target.vec)
     dens.flag <- FALSE
   }
-  if (type %in% c("Binary (categories)" ,"Category")) { 
+  if (type %in% c("Binary (categories)" ,"Category", "Difference")) { 
     tran.vec  <- NULL 
     dens.flag <- FALSE
   }  
@@ -405,9 +445,17 @@ WrapGuess <- function(file) {
 
 ###########################
 # Checking  ---------------------------------------------------------------
-wrapTypes(target.vec = rbinom(100, 1,0.5), type = "Binary (categories)", bin.width = 0.1,var.name = 'Tzvikush', to.reverse = TRUE)
-wrapTypes(target.vec = rnorm(100, 5,0.5), type = "Amounts", var.name = 'Tzvikush', bin.width = 0.1)
-wrapTypes(target.vec = rpois(100, 5), type = "Counts", var.name = 'Tzvikush')
-wrapTypes(target.vec = rpois(100, 5) / 10, type = "Ratio", var.name = 'Tzvikush')
+# wrapTypes(target.vec = rbinom(100, 1,0.5), type = "Binary (categories)", bin.width = 0.1,var.name = 'Tzvikush', to.reverse = TRUE)
+# wrapTypes(target.vec = rnorm(100, 5,0.5), type = "Amounts", var.name = 'Tzvikush', bin.width = 1, window.size = 1)
+# wrapTypes(target.vec = rpois(100, 5), type = "Counts", var.name = 'Tzvikush')
+# wrapTypes(target.vec = rpois(100, 5) / 10, type = "Ratio", var.name = 'Tzvikush')
+# 
+# ## Read Data 
+# dat <- read.csv('merged_db_CM.csv')
+# 
+# wrapTypes(target.vec = dat$attention_mmse, type = "Bounded counts", bin.width = 1,var.name = 'Tzvikush', to.reverse = F, b =5, a=0)
+# wrapTypes(target.vec = dat$MML, type = "Binary (categories)", bin.width = 1,var.name = 'Tzvikush', to.reverse = F, b =1, a=0)
+# wrapTypes(target.vec = dat$MMTRIALS, type = "Binary (categories)", bin.width = 1,var.name = 'Tzvikush', to.reverse = F, b =1, a=0)
+# 
 
 ###########################
