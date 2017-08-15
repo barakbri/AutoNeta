@@ -26,6 +26,9 @@ SLIDER_KERNELWIDTH_MAX_MULTIPLIER = 2
 MSGS = list()
 MSGS$MSG_CANNOT_EXPORT_TITLE = "Cannot Export Data"
 MSGS$MSG_CANNOT_EXPORT_BODY = "Cannot Export Data - No Data Has Been Loaded"
+MSGS$MSG_CANNOT_DOWNLOAD_TITLE = "Cannot Download VarType Estimation"
+MSGS$MSG_CANNOT_DOWNLOAD_BODY = "Cannot Download VarType Estimation - No Data Was Uploaded"
+MSGS$DISCLAIMER = "The suggested var types are in the sole responsability of the user, and require their discretion."
 
 MSGS$MSG_VAR_NOT_IN_VARDEF_TITLE = "Cannot display variable"
 MSGS$MSG_VAR_NOT_IN_VARDEF_BODY = "Cannot display variable, no line \n found for variable in vardef file"

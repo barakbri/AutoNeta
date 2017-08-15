@@ -92,11 +92,21 @@ shinyUI(
   )# end of fluid page (upper toolbar, sidebar layout, advanced panel)
 ), #end of tabPanel - Transform
 
+
 ###**************************************
 ### Variable Definition window
 ###**************************************
-tabPanel(UI_LABELS$TAB_GENERATE_VARDEF, sidebarLayout(sidebarPanel(),mainPanel())),
+tabPanel(UI_LABELS$TAB_GENERATE_VARDEF, 
+         sidebarLayout(
+           sidebarPanel(
+             fileInput('file_varGuess', UI_LABELS$UPLOAD_DATA_LABEL,
+                                               accept=c('text/csv', 
+                                                        'text/comma-separated-values,text/plain', 
+                                                        '.csv')),
+             uiOutput("ui")),
+                       mainPanel())),
 
+#
 ###**************************************
 ### Help and About windows
 ###**************************************
