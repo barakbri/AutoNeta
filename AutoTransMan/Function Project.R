@@ -257,7 +257,7 @@ ratioFunction <- function(target.vec, a, b) {
 }
 
 ## Function for Proportion 
-propFunction <- fucntion() {
+propFunction <- function() {
   tran.vec <- c('logit') 
   return(tran.vec)
 }
