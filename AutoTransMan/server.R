@@ -471,24 +471,16 @@ shinyServer(function(input, output, session){
       before_original_yules = before_original_yules[ord]
       
       for(i in 1:length(ord)){
-        if(SystemVariables$isExcluded[SystemVariables$BeforeList_Indices_of_var[i]]){
-          SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], UI_LABELS$LIST_EXCLUDED)  
-        }else{
           SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "( Yule:", round(before_original_yules[i],3),")")  
-        }
-        
       }
       
     }
     
     #add type - excluded
-    for(i in 1:length(ord)){
+    for(i in 1:length(SystemVariables$BeforeList_Labels)){
       if(SystemVariables$isExcluded[SystemVariables$BeforeList_Indices_of_var[i]]){
         SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], UI_LABELS$LIST_EXCLUDED)  
-      }else{
-        SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "( Yule:", round(before_original_yules[i],3),")")  
       }
-      
     }
     
     
@@ -496,6 +488,7 @@ shinyServer(function(input, output, session){
     SystemVariables$AfterList_HasBeenTransformed = SystemVariables$hasBeenTransformed[ind_after]
     SystemVariables$AfterList_Labels = colnames(SystemVariables$Data_Original)[ind_after]
     
+    #add transformation labels, and if excluded
     if(length(SystemVariables$AfterList_Labels)>0){
       for(i in 1:length(SystemVariables$AfterList_Labels)){
         
@@ -519,12 +512,14 @@ shinyServer(function(input, output, session){
     SystemVariables$Lists_RefreshNeeded = F
   }
   
+  #wrapper for updating the 'before' list according to system variables
   Controller_Update_BeforeList = function(selected_item = NULL){
     updateSelectInput(session, "ui_list_Before",label = UI_LABELS$BEFORE_LIST,
                       choices = SystemVariables$BeforeList_Labels,selected = selected_item
     )
   }
   
+  #wrapper for updating the 'after' list according to system variables
   Controller_Update_AfterList = function(selected_item = NULL){
     updateSelectInput(session, "ui_list_After", label = UI_LABELS$AFTER_LIST,
                       choices = SystemVariables$AfterList_Labels,selected = selected_item
@@ -538,12 +533,14 @@ shinyServer(function(input, output, session){
     for(i in 1:length(FIELDS_TO_SAVE_LIST)){
       SystemVariables[[ FIELDS_TO_SAVE_LIST[i] ]] = save_list[[ FIELDS_TO_SAVE_LIST[i] ]]
     }
+    #check version
     if(SystemVariables$Version_Server != VERSION_SERVER){
       showModal(modalDialog(
         title = "Warning: Possible Save File Mismatch!",
         paste0('Server Version:',VERSION_SERVER,',',' Save File Version: ',SystemVariables$Version_Server)
       ))
     }
+    
     #zeroize the reset of the memory space
     SystemVariables$ErrorLineString = ""
     SystemVariables$Lists_RefreshNeeded = F
@@ -594,7 +591,8 @@ shinyServer(function(input, output, session){
   # - zeroize, selection and redraw falgs.
   # - put label in status bar
   Controller_VariableSelected = function(){
-
+    #check which if the two lists has caused the change
+    #note: it could be that a slider, and not lists caused the redraw
     if(SystemVariables$BeforeList_HasFocus & SystemVariables$BeforeList_IndexSelected!=-1){
       SystemVariables$Variable_Selected = T
       
@@ -625,6 +623,7 @@ shinyServer(function(input, output, session){
     bin_type_parameter = NULL
     kernel_width_parameter = NULL
     
+    #if variable is excluded, tell the user!
     if(SystemVariables$isExcluded[ind_selected]){
       SystemVariables$Graphs_ggplot2_obj_list = NULL
       SystemVariables$Graphs_display_transformed_data = NULL
@@ -646,7 +645,7 @@ shinyServer(function(input, output, session){
     bin_type_parameter = input$graphicalparameter_BinSize
     kernel_width_parameter = input$graphicalparameter_KernelWidth
        
-    
+    # this is where the magic happens:
     if(length(ind_of_var_in_vardef) == 1){
       transformations_obj = tryCatch(
         wrapTypes(
@@ -683,6 +682,7 @@ shinyServer(function(input, output, session){
         SystemVariables$ErrorLineString = paste0("Cannot transform ",colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf])
       }
     }
+    #if variable is not found in vardef, report to user
     if(length(ind_of_var_in_vardef) != 1){
       SystemVariables$Graphs_ggplot2_obj_list = NULL
       SystemVariables$Graphs_display_transformed_data = NULL
@@ -804,6 +804,7 @@ shinyServer(function(input, output, session){
     s
   })
   
+  #renderer for export data button:
   output$ui_export_trans_data <- renderUI({
     should_show = SystemVariables$Data_Is_Loaded & SystemVariables$VarDef_Is_Loaded &
       !SystemVariables$Data_Is_Error & !SystemVariables$VarDef_Is_Error
@@ -815,6 +816,7 @@ shinyServer(function(input, output, session){
     
   })
   
+  #renderer for export transformation button:
   output$ui_export_trans_report <- renderUI({
     should_show = SystemVariables$Data_Is_Loaded & SystemVariables$VarDef_Is_Loaded &
       !SystemVariables$Data_Is_Error & !SystemVariables$VarDef_Is_Error
@@ -857,11 +859,10 @@ shinyServer(function(input, output, session){
     if (!is.null(input$file_varGuess)) {
       Temp_File  <- read.csv(File_Data_Guess$datapath)
       SystemVariables$VarDef_Guess <- WrapGuess(Temp_File)
-      #shinyjs::enable("downloadGuess")
 
     }
   })
-  # 
+   
    
   output$downloadGuess <- downloadHandler( 
     filename = function() {
