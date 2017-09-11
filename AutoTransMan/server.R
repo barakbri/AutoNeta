@@ -305,13 +305,13 @@ shinyServer(function(input, output, session){
     #check for change on the Bin Size Slider
     if(!is.null(input$graphicalparameter_BinSize) & !is.null(SystemVariables$Slider_BinSize_current_value))
       if(SystemVariables$Slider_BinSize_current_value != input$graphicalparameter_BinSize){
-        SystemVariables$Sliders_need_to_update = F
+        #SystemVariables$Sliders_need_to_update = F
         SystemVariables$Graphs_RefreshNeeded = T
       }
     #check for change on the Kernel Width Slider
     if(!is.null(input$graphicalparameter_KernelWidth) & !is.null(SystemVariables$Slider_KernelWidth_current_value))
       if(SystemVariables$Slider_KernelWidth_current_value != input$graphicalparameter_KernelWidth){
-        SystemVariables$Sliders_need_to_update = F
+        #SystemVariables$Sliders_need_to_update = F
         SystemVariables$Graphs_RefreshNeeded = T
       }
     
@@ -643,7 +643,13 @@ shinyServer(function(input, output, session){
     })
     bin_type_parameter = input$graphicalparameter_BinSize
     kernel_width_parameter = input$graphicalparameter_KernelWidth
-       
+    
+    #this handles a case where the the KDE slider is not initialized yet
+    if(is.null(kernel_width_parameter))
+      kernel_width_parameter = 1
+    if(is.null(bin_type_parameter))
+      bin_type_parameter = 1
+    
     # this is where the magic happens:
     if(length(ind_of_var_in_vardef) == 1){
       transformations_obj = tryCatch(
@@ -681,6 +687,9 @@ shinyServer(function(input, output, session){
         SystemVariables$ErrorLineString = paste0("Cannot transform ",colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf])
       }
     }
+    
+    SystemVariables$Sliders_need_to_update = T
+    
     #if variable is not found in vardef, report to user
     if(length(ind_of_var_in_vardef) != 1){
       SystemVariables$Graphs_ggplot2_obj_list = NULL
@@ -803,6 +812,27 @@ shinyServer(function(input, output, session){
     s
   })
   
+  
+  #renderer for data upload
+  output$ui_load_data <- renderUI({
+    should_show = !SystemVariables$workSpaceIsLoaded
+    if(should_show){
+      fileInput('file_Data', '', accept=c('text/csv',  'text/comma-separated-values,text/plain', '.csv'))
+    }else{
+      h4(UI_LABELS$WORKSPACE_LOADED_NO_UPLOAD)
+    }
+  })
+  
+  #renderer for var def upload
+  output$ui_load_var_def <- renderUI({
+    should_show = !SystemVariables$workSpaceIsLoaded
+    if(should_show){
+      fileInput('file_VarDef', '', accept=c('text/csv',  'text/comma-separated-values,text/plain',  '.csv'))
+    }else{
+      h4(UI_LABELS$WORKSPACE_LOADED_NO_UPLOAD)
+    }
+  })
+  
   #renderer for export data button:
   output$ui_export_trans_data <- renderUI({
     should_show = SystemVariables$Data_Is_Loaded & SystemVariables$VarDef_Is_Loaded &
@@ -826,6 +856,38 @@ shinyServer(function(input, output, session){
     }
   })
   
+  #renderers for sliders:
+  #Bin size slider:
+  output$ui_Slider_BinSize <- renderUI({
+    sliderInput("graphicalparameter_BinSize", UI_LABELS$SLIDER_BIN_SIZE,
+                min = SLIDER_BINSIZE_MIN_MULTIPLIER, max = SLIDER_BINSIZE_MAX_MULTIPLIER, value = 1,width = '85%',sep='',step = 0.1
+    )
+  })
+  #KDE slider:
+  output$ui_Slider_KernelWidth <- renderUI({
+    need_to_show = F
+    if(!is.null(SystemVariables$VarDef_type))
+        if(SystemVariables$Variable_Selected_IndexOf>=1 & SystemVariables$Variable_Selected_IndexOf <= length(SystemVariables$VarDef_type)){
+          ind_selected = SystemVariables$Variable_Selected_IndexOf
+          ind_of_var_in_vardef = which(SystemVariables$VarDef_label == colnames(SystemVariables$Data_Original)[ind_selected])
+          if(tolower(SystemVariables$VarDef_type[ind_of_var_in_vardef]) %in%
+             tolower(VARIABLE_TYPES_WITH_DENSITY)){
+            need_to_show = T            
+          }
+        }
+    if(SystemVariables$Sliders_need_to_update){
+      SystemVariables$Sliders_need_to_update = F
+    }    
+    if(need_to_show)        
+      sliderInput("graphicalparameter_KernelWidth",
+                  UI_LABELS$SLIDER_KDE_WIDTH,
+                  min = SLIDER_KERNELWIDTH_MIN_MULTIPLIER,
+                  max = SLIDER_KERNELWIDTH_MAX_MULTIPLIER,
+                  value = SystemVariables$Slider_KernelWidth_current_value,
+                  width = '85%',sep='',step = 0.1
+      )
+    
+  })
   ###
   # Click Handlers
   ###

@@ -17,6 +17,8 @@ VARIABLE_TYPES = c("Amounts","Counts","Ratio","Proportion","Counted Fraction",
                    "Bounded Amounts","Bounded Counts","Ranks","Ordered Categories",
                    "Binary (categories)","Category")
 
+VARIABLE_TYPES_WITH_DENSITY = VARIABLE_TYPES[which(VARIABLE_TYPES %in% c("Amounts","Ratio","Proportion","Bounded Amounts"))]
+
 INDICES_FOR_ASYMMETRY = list()
 INDICES_FOR_ASYMMETRY$YULE = 'Yule'
 
@@ -99,8 +101,9 @@ UI_LABELS$EXCLUDE_VARIABLE_NOT_ENOUGH_VALUES = " Variable has less then three va
 
 UI_LABELS$LIST_EXCLUDED = " (Excluded)"
 
-UI_LABELS$EXPORT_DATA_NOT_READY = 'Upload data and variable definitions to allow export of transformed data'
-UI_LABELS$EXPORT_TRANS_NOT_READY = 'Upload data and variable definitions to allow export of reported transformations'
+UI_LABELS$EXPORT_DATA_NOT_READY = 'Upload data and var. def.  to allow export'
+UI_LABELS$EXPORT_TRANS_NOT_READY = 'Upload data and var. def.  to allow export'
+UI_LABELS$WORKSPACE_LOADED_NO_UPLOAD = 'Workspace reloaded, refresh to load new data'
 
 #UX/UI constants:
 PLOT_HEIGHT = "280px"

@@ -5,33 +5,46 @@ library(shiny)
 # definitions:
 source('definitions.r')
 
-
+ICON_SIZE = '35px'
 
 shinyUI(
-  navbarPage(div(img(src="hbp.jpg"), UI_LABELS$TITLE),selected = UI_LABELS$TAB_TRANSFORM,
+  navbarPage(div(img(src="hbp.jpg"), UI_LABELS$TITLE),selected = UI_LABELS$TAB_FILE,
   
              ###**************************************
              ### File window: save load, exports
              ###**************************************
              
             tabPanel(UI_LABELS$TAB_FILE,
-                fluidPage(
-                  
-                  fluidRow(column(1,img(src="disk.png",height = '40px',width = '40px',style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                           column(4,h4(UI_LABELS$SAVE,style="padding:20px;vertical-align:center;"), downloadButton("button_Save",UI_LABELS$BUTTON_LABEL_SAVE))),
-                  fluidRow(HTML('</br>')),
-                  
-                  fluidRow(column(1,img(src="folder.png",height = '40px',width = '40px',style="margin-top: 25px; display: block; margin-left: auto; margin-right: auto;")),
-                           column(4,h4(UI_LABELS$LOAD,style="padding:20px;"),fileInput("button_Load",UI_LABELS$BUTTON_LABEL_LOAD))),
-                  fluidRow(HTML('</br>')),
-                  
-                  fluidRow(column(1,img(src="book.png",height = '40px',width = '40px',style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                           column(4,h4(UI_LABELS$EXPORT,style="padding:20px;"),uiOutput('ui_export_trans_data'))),
-                  fluidRow(HTML('</br>')),
-                  
-                  fluidRow(column(1,img(src="checklist.png",height = '40px',width = '40px',style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                           column(4,h4(UI_LABELS$EXPORT_TRANS,style="padding:20px;"),uiOutput('ui_export_trans_report')))
-                )
+                     sidebarLayout(
+                       # Sidebar with controls
+                       sidebarPanel(
+                         fluidPage(
+                           fluidRow(column(1,img(src="upload.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                    column(10,h4(UI_LABELS$UPLOAD_VARDEF_LABEL,style="padding:20px;vertical-align:center;"),
+                                           uiOutput('ui_load_var_def'))),
+                           fluidRow(column(1,img(src="upload.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                    column(10,h4(UI_LABELS$UPLOAD_DATA_LABEL,style="padding:20px;vertical-align:center;"),
+                                           uiOutput('ui_load_data'))),
+                           fluidRow(column(1,img(src="disk.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                    column(10,h4(UI_LABELS$SAVE,style="padding:20px;vertical-align:center;"), downloadButton("button_Save",UI_LABELS$BUTTON_LABEL_SAVE))),
+                           #fluidRow(HTML('</br>')),
+                           
+                           fluidRow(column(1,img(src="folder.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px; display: block; margin-left: auto; margin-right: auto;")),
+                                    column(10,h4(UI_LABELS$LOAD,style="padding:20px;"),fileInput("button_Load",UI_LABELS$BUTTON_LABEL_LOAD))),
+                           #fluidRow(HTML('</br>')),
+                           
+                           fluidRow(column(1,img(src="book.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                    column(10,h4(UI_LABELS$EXPORT,style="padding:20px;"),uiOutput('ui_export_trans_data'))),
+                           #fluidRow(HTML('</br>')),
+                           
+                           fluidRow(column(1,img(src="checklist.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                    column(10,h4(UI_LABELS$EXPORT_TRANS,style="padding:20px;"),uiOutput('ui_export_trans_report')))
+                         )  
+                       ),
+                       
+                       # Show a plot of the generated distribution
+                       mainPanel()
+                     )
                 
             ),
           
@@ -49,15 +62,6 @@ shinyUI(
     fluidRow(column(12,
                     sidebarLayout(
                       sidebarPanel(
-                        fileInput('file_VarDef', UI_LABELS$UPLOAD_VARDEF_LABEL,
-                                  accept=c('text/csv', 
-                                           'text/comma-separated-values,text/plain', 
-                                           '.csv')),
-                        
-                        fileInput('file_Data', UI_LABELS$UPLOAD_DATA_LABEL,
-                                  accept=c('text/csv', 
-                                           'text/comma-separated-values,text/plain', 
-                                           '.csv')),
                         #lists
                         fluidPage(
                           #before after lists
@@ -94,12 +98,8 @@ shinyUI(
     ### Transform window: this is the graphical parameters row
     ###**************************************
     fluidRow(
-      column(6,sliderInput("graphicalparameter_BinSize", UI_LABELS$SLIDER_BIN_SIZE,
-                           min = SLIDER_BINSIZE_MIN_MULTIPLIER, max = SLIDER_BINSIZE_MAX_MULTIPLIER, value = 1,width = '85%',sep='',step = 0.1
-      )),
-      column(6,sliderInput("graphicalparameter_KernelWidth", UI_LABELS$SLIDER_KDE_WIDTH,
-                          min = SLIDER_KERNELWIDTH_MIN_MULTIPLIER, max = SLIDER_KERNELWIDTH_MAX_MULTIPLIER, value = 1,width = '85%',sep='',step = 0.1
-      ))
+      column(6,uiOutput('ui_Slider_BinSize')),
+      column(6,htmlOutput('ui_Slider_KernelWidth'))
     )
   )# end of fluid page (upper toolbar, sidebar layout, advanced panel)
 ), #end of tabPanel - Transform
