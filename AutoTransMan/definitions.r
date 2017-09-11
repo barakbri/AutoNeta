@@ -81,7 +81,7 @@ UI_LABELS$TAB_TRANSFORM = "Transform"
 UI_LABELS$TAB_GENERATE_VARDEF = "Generate Variable Defenition"
 UI_LABELS$UPLOAD_VARDEF_LABEL = 'Choose variable definitions CSV file'
 UI_LABELS$UPLOAD_DATA_LABEL = 'Choose Data CSV file'
-UI_LABELS$SORT_BY_YULE = "Sort By Yule"
+UI_LABELS$SORT_BY_YULE = "Sort by Yule (Binary Categories appear last)"
 
 UI_LABELS$BUTTON_LABEL_SAVE = "Save"
 UI_LABELS$BUTTON_LABEL_LOAD = ""

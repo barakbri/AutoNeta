@@ -459,12 +459,29 @@ shinyServer(function(input, output, session){
     
     SystemVariables$BeforeList_Indices_of_var = ind_before
     SystemVariables$BeforeList_Labels = colnames(SystemVariables$Data_Original)[ind_before]
+    if(length(ind_before)>0)
+      for(i in 1:length(ind_before)){
+        SystemVariables$BeforeList_Labels[i] = paste0(SystemVariables$BeforeList_Labels[i], ', ',SystemVariables$VarDef_type[ind_before[i]],' ')  
+      }
     
     #order by yule indexon the before list, if needed
     if(SystemVariables$BeforeList_OrderBy_Yule == T){
       #need to do sort
       before_original_yules = SystemVariables$Original_Yule[ind_before]
-      ord = order(before_original_yules,decreasing = T)
+      before_original_yules_order_by = before_original_yules
+      #here we can reorder groups, for example,
+      #show binary variables at the end of the list
+      
+      binary_vars = which(SystemVariables$VarDef_type[ind_before] %in%
+                            c("Binary (categories)","Category") |
+                            abs(abs(before_original_yules) - 1) <= 10^(-4))
+      if(length(binary_vars) > 0)
+        before_original_yules_order_by[binary_vars] = -Inf
+      
+      
+      ord = order(before_original_yules_order_by,decreasing = T)
+      
+      
       SystemVariables$BeforeList_Indices_of_var = SystemVariables$BeforeList_Indices_of_var[ord]  
       SystemVariables$BeforeList_Labels = SystemVariables$BeforeList_Labels[ord]
       before_original_yules = before_original_yules[ord]
@@ -487,11 +504,22 @@ shinyServer(function(input, output, session){
     SystemVariables$AfterList_HasBeenTransformed = SystemVariables$hasBeenTransformed[ind_after]
     SystemVariables$AfterList_Labels = colnames(SystemVariables$Data_Original)[ind_after]
     
+    if(length(ind_after))
+      for(i in 1:length(ind_after)){
+        SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i], ', ',SystemVariables$VarDef_type[ind_after[i]],' ')  
+      }
+    
     #add transformation labels, and if excluded
     if(length(SystemVariables$AfterList_Labels)>0){
       for(i in 1:length(SystemVariables$AfterList_Labels)){
-        
-        SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i], ' - ',SystemVariables$Transformation_Used[SystemVariables$AfterList_Indices_of_var[i]])
+        ind_of_var = SystemVariables$AfterList_Indices_of_var[i]
+        SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i],
+                                                     ' - ',
+                                                     SystemVariables$Transformation_Used[ind_of_var],
+                                                     ' (Yule: ',
+                                                     round(SystemVariables$Original_Yule[ind_of_var],3),
+                                                     ' -> ',
+                                                     round(SystemVariables$New_Yule[ind_of_var],3),')')
         
         if(SystemVariables$isExcluded[SystemVariables$AfterList_Indices_of_var[i]]){
           SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i], UI_LABELS$LIST_EXCLUDED)
@@ -878,14 +906,19 @@ shinyServer(function(input, output, session){
     if(SystemVariables$Sliders_need_to_update){
       SystemVariables$Sliders_need_to_update = F
     }    
-    if(need_to_show)        
+    if(need_to_show){
+      if(is.null(SystemVariables$Slider_KernelWidth_current_value))
+        SystemVariables$Slider_KernelWidth_current_value = 1
       sliderInput("graphicalparameter_KernelWidth",
-                  UI_LABELS$SLIDER_KDE_WIDTH,
-                  min = SLIDER_KERNELWIDTH_MIN_MULTIPLIER,
-                  max = SLIDER_KERNELWIDTH_MAX_MULTIPLIER,
-                  value = SystemVariables$Slider_KernelWidth_current_value,
-                  width = '85%',sep='',step = 0.1
+                    UI_LABELS$SLIDER_KDE_WIDTH,
+                    min = SLIDER_KERNELWIDTH_MIN_MULTIPLIER,
+                    max = SLIDER_KERNELWIDTH_MAX_MULTIPLIER,
+                    value = SystemVariables$Slider_KernelWidth_current_value,
+                    width = '85%',sep='',step = 0.1
       )
+    }
+      
+      
     
   })
   ###
