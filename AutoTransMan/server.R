@@ -288,9 +288,10 @@ shinyServer(function(input, output, session){
         SystemVariables$Graphs_RefreshNeeded = T
         SystemVariables$BeforeList_HasFocus = F
         SystemVariables$AfterList_HasFocus = T
+      
       }
     
-    
+
     #Graphs_RefreshNeeded
     if(SystemVariables$Graphs_RefreshNeeded){
       if(!SystemVariables$Graphs_RefreshInProgress){
@@ -299,6 +300,43 @@ shinyServer(function(input, output, session){
         SystemVariables$Graphs_RefreshInProgress = F  
       }
     }
+    
+    ####### Wrote Here 
+    ## Summary dashboard
+    
+    output$part.table <- DT::renderDataTable({
+      ind <- SystemVariables$AfterList_Indices_of_var 
+      if (length(ind) > 0) {
+      # var.ind.vardef <- which(SystemVariables$VarDef_label == colnames(SystemVariables$Data_Original)[ind])
+      # 'New Yule' = SystemVariables$New_Yule[ind],
+      # 'Old Yule' = SystemVariables$Original_Yule[ind],
+      # 
+      
+      var.trans.tab  <- table('Var Type' = SystemVariables$VarDef_type[ind],
+                              'Transform' = SystemVariables$Transformation_Used[ind])
+      left.var.sum  <- table('Left Variables' = SystemVariables$VarDef_type[-ind])
+      
+      temp.tab      <- data.frame(cbind(var.trans.tab, 
+                                        'Left Variables' =left.var.sum[match(rownames(var.trans.tab), 
+                                                                             rownames(left.var.sum))]))
+      data      <- data.frame(temp.tab, 'Total' = apply(temp.tab, 1, sum, na.rm = T))
+      DT::datatable(data, caption = 'Summary')
+      }
+    }
+    ) 
+    
+    output$full.table <- DT::renderDataTable({
+      ind <- SystemVariables$AfterList_Indices_of_var
+      if (length(ind) > 0) {
+      data <- data.frame('Name'= gsub("^(.*?),.*", "\\1", SystemVariables$AfterList_Labels),
+                         'Var Type' = SystemVariables$VarDef_type[ind],
+                         'Transform' = SystemVariables$Transformation_Used[ind],
+                         'Old Yule' = round(SystemVariables$Original_Yule[ind], 3),
+                         'New Yule' = round(SystemVariables$New_Yule[ind], 3)) 
+      DT::datatable(data, caption = 'Transformed Variables')
+      }
+    }
+    )
   })
   
   #handle a replot, on a change of sliders
@@ -975,8 +1013,9 @@ shinyServer(function(input, output, session){
       
     }
   })
+
+
   
 })
-
 
 

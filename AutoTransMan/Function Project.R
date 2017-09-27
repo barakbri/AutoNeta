@@ -54,6 +54,30 @@ yuleIndex <- function(x) {
   return(sk)
 }
 
+
+## Optimize Yule according to tukey ladder 
+
+optimYule <- function(x, ladder = c(-2, -1, -0.5, 0, 0.5, 1, 2)) { 
+  no.sqrt <- any(x < 0) 
+  do.log  <- any(ladder == 0) && !(no.sqrt)
+  ladder  <- ladder[!(no.sqrt & (abs(round(ladder)) -  abs(ladder)) != 0)] 
+  ladder  <- ladder[!(ladder == 0)]
+  n <- length(ladder) 
+  yule.score <- rep(NA, n + 1 * do.log)
+  for (i in 1:n) { 
+    yule.score[i] <- yuleIndex(x^ladder[i])
+  }
+  names(yule.score) <- ladder
+  if (do.log) { 
+    yule.score[n + 1] <- yuleIndex(log(x))
+    names(yule.score)[n + 1] <- '0'
+  }
+  pos <- which.min(abs(yule.score))
+  return(c('Power' = as.numeric(names(yule.score)[pos]),
+           'Yule Index' = yule.score[pos]))
+}
+
+
 ###########################
 
 ###########################
@@ -149,6 +173,8 @@ transformList <- function(target.vec,
   if ('to.reverse' %in% transform.vec) {
     transform.list[['to.reverse']] <- b - target.vec 
   }
+  if ('tukey.optim' %in% transform.vec) { 
+    }
   return(transform.list)
 }
 
@@ -236,10 +262,10 @@ amountFunction <- function(target.vec) {
   # If right skewed perform sqrt, log and inverse transformation
   if (mean(target.vec, na.rm = TRUE) > median(target.vec, na.rm = TRUE))
   {
-    temp.transform <- c('log', 'sqrt', 'invert')
+    temp.transform <- c('log', 'sqrt', 'invert', 'tukey.optim')
     ## If left skewed perform power of 2 
   } else {
-    temp.transform <- c('power.2')
+    temp.transform <- c('power.2', 'tukey.optim')
   }
   return(temp.transform)
 }
@@ -252,43 +278,43 @@ countFunction <- function(target.vec) {
 
 ## Function for Ratio 
 ratioFunction <- function(target.vec, a, b) { 
-  tran.vec <- c('log')
+  tran.vec <- c('log', 'tukey.optim')
   return(tran.vec)
 }
 
 ## Function for Proportion 
 propFunction <- function() {
-  tran.vec <- c('logit') 
+  tran.vec <- c('logit', 'tukey.optim') 
   return(tran.vec)
 }
 
 ## Bounded amount function 
 boundedAmountFunc <- function(target.vec, a, b) { 
-  tran.vec <- c('logit.norm', 'frac') 
+  tran.vec <- c('logit.norm', 'frac', 'tukey.optim') 
   return(tran.vec)
 }
 
 ## Bounded Count 
 boundedCountFunc <- function(target.vec, a, b) { 
-  tran.vec <- c('logit.norm') 
+  tran.vec <- c('logit.norm', 'frac', 'tukey.optim') 
   return(tran.vec)
 }
 
 ## Ranks  
 ranksFunc <- function(target.vec, a, b) { 
-  tran.vec <- c('logit.norm') 
+  tran.vec <- c('logit.norm', 'tukey.optim') 
   return(tran.vec)
 }
 
 ## Ordered Categories 
 orderedCatFunc <- function(target.vec) { 
-  tran.vec <- c('cumulative.entropy') 
+  tran.vec <- c('cumulative.entropy', 'tukey.optim') 
   return(tran.vec)
 }
 
 ## Counted fractions 
 countFracFunction <- function(target.vec, b) { 
-  tran.vec <- c('logit') 
+  tran.vec <- c('logit', 'tukey.optim') 
   return(tran.vec)
 }
 

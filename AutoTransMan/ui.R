@@ -8,45 +8,52 @@ source('definitions.r')
 ICON_SIZE = '35px'
 
 shinyUI(
-  navbarPage(div(img(src="hbp.jpg"), UI_LABELS$TITLE),selected = UI_LABELS$TAB_FILE,
+  navbarPage(title = 'AutoNeta - Transformation Mananger',div(img(src="hbp.jpg"), UI_LABELS$TITLE),selected = UI_LABELS$TAB_FILE,
   
              ###**************************************
              ### File window: save load, exports
              ###**************************************
              
-            tabPanel(UI_LABELS$TAB_FILE,
-                     sidebarLayout(
-                       # Sidebar with controls
-                       sidebarPanel(
-                         fluidPage(
-                           fluidRow(column(1,img(src="upload.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                                    column(10,h4(UI_LABELS$UPLOAD_VARDEF_LABEL,style="padding:20px;vertical-align:center;"),
-                                           uiOutput('ui_load_var_def'))),
-                           fluidRow(column(1,img(src="upload.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                                    column(10,h4(UI_LABELS$UPLOAD_DATA_LABEL,style="padding:20px;vertical-align:center;"),
-                                           uiOutput('ui_load_data'))),
-                           fluidRow(column(1,img(src="disk.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                                    column(10,h4(UI_LABELS$SAVE,style="padding:20px;vertical-align:center;"), downloadButton("button_Save",UI_LABELS$BUTTON_LABEL_SAVE))),
-                           #fluidRow(HTML('</br>')),
-                           
-                           fluidRow(column(1,img(src="folder.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px; display: block; margin-left: auto; margin-right: auto;")),
-                                    column(10,h4(UI_LABELS$LOAD,style="padding:20px;"),fileInput("button_Load",UI_LABELS$BUTTON_LABEL_LOAD))),
-                           #fluidRow(HTML('</br>')),
-                           
-                           fluidRow(column(1,img(src="book.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                                    column(10,h4(UI_LABELS$EXPORT,style="padding:20px;"),uiOutput('ui_export_trans_data'))),
-                           #fluidRow(HTML('</br>')),
-                           
-                           fluidRow(column(1,img(src="checklist.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                                    column(10,h4(UI_LABELS$EXPORT_TRANS,style="padding:20px;"),uiOutput('ui_export_trans_report')))
-                         )  
-                       ),
-                       
-                       # Show a plot of the generated distribution
-                       mainPanel()
-                     )
-                
-            ),
+             tabPanel(UI_LABELS$TAB_FILE,
+                      sidebarLayout(
+                        # Sidebar with controls
+                        sidebarPanel(
+                          fluidPage(
+                            fluidRow(column(1,img(src="upload.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                     column(10,h4(UI_LABELS$UPLOAD_VARDEF_LABEL,style="padding:20px;vertical-align:center;"),
+                                            uiOutput('ui_load_var_def'))),
+                            fluidRow(column(1,img(src="upload.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                     column(10,h4(UI_LABELS$UPLOAD_DATA_LABEL,style="padding:20px;vertical-align:center;"),
+                                            uiOutput('ui_load_data'))),
+                            fluidRow(column(1,img(src="disk.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                     column(10,h4(UI_LABELS$SAVE,style="padding:20px;vertical-align:center;"), downloadButton("button_Save",UI_LABELS$BUTTON_LABEL_SAVE))),
+                            #fluidRow(HTML('</br>')),
+                            
+                            fluidRow(column(1,img(src="folder.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px; display: block; margin-left: auto; margin-right: auto;")),
+                                     column(10,h4(UI_LABELS$LOAD,style="padding:20px;"),fileInput("button_Load",UI_LABELS$BUTTON_LABEL_LOAD))),
+                            #fluidRow(HTML('</br>')),
+                            
+                            fluidRow(column(1,img(src="book.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                     column(10,h4(UI_LABELS$EXPORT,style="padding:20px;"),uiOutput('ui_export_trans_data'))),
+                            #fluidRow(HTML('</br>')),
+                            
+                            fluidRow(column(1,img(src="checklist.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                     column(10,h4(UI_LABELS$EXPORT_TRANS,style="padding:20px;"),uiOutput('ui_export_trans_report')))
+                          )  
+                        ),
+                        
+                        # Show a plot of the generated distribution
+                        mainPanel(
+                          fluidPage(
+                            fluidRow(
+                              DT::dataTableOutput("part.table"), title = 'Summary')
+                            ,
+                            fluidRow(
+                              DT::dataTableOutput("full.table"), title = 'Output Variables')
+                          )
+                        )
+                      )
+             ),
           
                         
   ###**************************************
