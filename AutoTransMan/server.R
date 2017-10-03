@@ -42,6 +42,7 @@ shinyServer(function(input, output, session){
   # Data variables - This section is a part of the 'Model' part of the program
   # this part is saved and loaded on workspace save/load actions
     Data_Original = NULL,
+    Data_Type = environment(),
     Data_Transformed = NULL,
     Original_Yule = NULL,
     New_Yule = NULL,
@@ -496,11 +497,26 @@ shinyServer(function(input, output, session){
     ind_before = which(SystemVariables$hasBeenTransformed == F)
     ind_after = which(SystemVariables$hasBeenTransformed == T)
     
+    #organize variables types in hashlist
+    vec_of_names = colnames(SystemVariables$Data_Original)
+    for(i in 1:length(vec_of_names)){
+      if(is.null(SystemVariables$Data_Type[[vec_of_names[i] ]])){
+        ind_of_type = which(as.character(SystemVariables$VarDef_label) == vec_of_names[i])
+        if(length(ind_of_type)>0){
+          SystemVariables$Data_Type[[vec_of_names[i] ]] = SystemVariables$VarDef_type[ind_of_type[1]] #can we encounter a case of more than one?
+        }
+      }
+    }
+    
     SystemVariables$BeforeList_Indices_of_var = ind_before
     SystemVariables$BeforeList_Labels = colnames(SystemVariables$Data_Original)[ind_before]
+    
     if(length(ind_before)>0)
       for(i in 1:length(ind_before)){
-        SystemVariables$BeforeList_Labels[i] = paste0(SystemVariables$BeforeList_Labels[i], ', ',SystemVariables$VarDef_type[ind_before[i]],' ')  
+        if(!is.null(SystemVariables$Data_Type[[ SystemVariables$BeforeList_Labels[i] ]])){
+          SystemVariables$BeforeList_Labels[i] = paste0(SystemVariables$BeforeList_Labels[i], ', ',SystemVariables$Data_Type[[SystemVariables$BeforeList_Labels[i] ]],' ')    
+        }
+        
       }
     
     #order by yule indexon the before list, if needed
@@ -511,9 +527,20 @@ shinyServer(function(input, output, session){
       #here we can reorder groups, for example,
       #show binary variables at the end of the list
       
-      binary_vars = which(SystemVariables$VarDef_type[ind_before] %in%
-                            c("Binary (categories)","Category") |
-                            abs(abs(before_original_yules) - 1) <= 10^(-4))
+      binary_vars = list()
+      for(i in 1:ncol(SystemVariables$Data_Original)){
+        current_name = SystemVariables$Data_Type[[colnames(SystemVariables$Data_Original)[i] ]]
+        if(!is.null(current_name)){
+          if((current_name %in% c("Binary (categories)","Category") |
+               length(unique(SystemVariables$Data_Original[,i]))<=2))
+            binary_vars[[length(binary_vars) + 1]] = i
+        }
+      }
+      binary_vars = unlist(binary_vars)
+      
+      #binary_vars = which(SystemVariables$VarDef_type[ind_before] %in%
+      #                      c("Binary (categories)","Category") |
+      #                      abs(abs(before_original_yules) - 1) <= 10^(-4))
       if(length(binary_vars) > 0)
         before_original_yules_order_by[binary_vars] = -Inf
       
@@ -545,7 +572,10 @@ shinyServer(function(input, output, session){
     
     if(length(ind_after))
       for(i in 1:length(ind_after)){
-        SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i], ', ',SystemVariables$VarDef_type[ind_after[i]],' ')  
+        if(!is.null(SystemVariables$Data_Type[[ SystemVariables$AfterList_Labels[i] ]])){
+          SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i], ', ',SystemVariables$Data_Type[[ SystemVariables$AfterList_Labels[i] ]],' ')            
+        }
+
       }
     
     #add transformation labels, and if excluded
@@ -730,7 +760,7 @@ shinyServer(function(input, output, session){
           window.size = kernel_width_parameter,
           var.name    = colnames(SystemVariables$Data_Original)[ind_selected],
           index.type = INDICES_FOR_ASYMMETRY$YULE
-        ),error = function(e){SystemVariables$ErrorLineString = "Error in Transformations";NULL}
+        ),error = function(e){SystemVariables$ErrorLineString = paste0("Error in Transformations",as.character(e));NULL}
       )
       if(!is.null(transformations_obj)){
         SystemVariables$ErrorLineString = ''
@@ -744,18 +774,24 @@ shinyServer(function(input, output, session){
         if(SystemVariables$BeforeList_HasFocus)
           SystemVariables$Graphs_Nr_Selected = -1
         
-        SystemVariables$Graphs_RefreshNeeded = F
+        
         
         SystemVariables$StatusLineString = paste0(
           colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf],
-          " selected")  
+          " selected")
+        SystemVariables$Sliders_need_to_update = T
       }else{
         SystemVariables$StatusLineString = ""
-        SystemVariables$ErrorLineString = paste0("Cannot transform ",colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf])
+        SystemVariables$ErrorLineString = paste0(SystemVariables$ErrorLineString,"Cannot transform ",colnames(SystemVariables$Data_Original)[SystemVariables$Variable_Selected_IndexOf])
+        SystemVariables$Sliders_need_to_update = F
+        showModal(modalDialog(
+          title = MSGS$MSG_CANNOT_TRANSFORM_TITLE,
+          SystemVariables$ErrorLineString
+        ))
       }
     }
     
-    SystemVariables$Sliders_need_to_update = T
+    SystemVariables$Graphs_RefreshNeeded = F
     
     #if variable is not found in vardef, report to user
     if(length(ind_of_var_in_vardef) != 1){
@@ -930,22 +966,30 @@ shinyServer(function(input, output, session){
                 min = SLIDER_BINSIZE_MIN_MULTIPLIER, max = SLIDER_BINSIZE_MAX_MULTIPLIER, value = 1,width = '85%',sep='',step = 0.1
     )
   })
+  
   #KDE slider:
   output$ui_Slider_KernelWidth <- renderUI({
     need_to_show = F
+
     if(!is.null(SystemVariables$VarDef_type))
-        if(SystemVariables$Variable_Selected_IndexOf>=1 & SystemVariables$Variable_Selected_IndexOf <= length(SystemVariables$VarDef_type)){
+        if(SystemVariables$Variable_Selected_IndexOf>=1 & SystemVariables$Variable_Selected_IndexOf <= ncol(SystemVariables$Data_Original)){
           ind_selected = SystemVariables$Variable_Selected_IndexOf
-          ind_of_var_in_vardef = which(SystemVariables$VarDef_label == colnames(SystemVariables$Data_Original)[ind_selected])
-          if(tolower(SystemVariables$VarDef_type[ind_of_var_in_vardef]) %in%
-             tolower(VARIABLE_TYPES_WITH_DENSITY)){
-            need_to_show = T            
-          }
+          current_var_type = NULL
+          if(colnames(SystemVariables$Data_Original)[ind_selected] %in% names(SystemVariables$Data_Type))
+            current_var_type = SystemVariables$Data_Type[[colnames(SystemVariables$Data_Original)[ind_selected]]]
+          #ind_of_var_in_vardef = which(SystemVariables$VarDef_label == colnames(SystemVariables$Data_Original)[ind_selected])
+          if(!is.null(current_var_type))
+            if(tolower(current_var_type) %in%
+               tolower(VARIABLE_TYPES_WITH_DENSITY)){
+              need_to_show = T
+            }
         }
+
+
     if(SystemVariables$Sliders_need_to_update){
       SystemVariables$Sliders_need_to_update = F
     }    
-    if(need_to_show){
+    if(need_to_show ){
       if(is.null(SystemVariables$Slider_KernelWidth_current_value))
         SystemVariables$Slider_KernelWidth_current_value = 1
       sliderInput("graphicalparameter_KernelWidth",
@@ -956,8 +1000,9 @@ shinyServer(function(input, output, session){
                     width = '85%',sep='',step = 0.1
       )
     }
-      
-      
+    #   
+
+    # 
     
   })
   ###

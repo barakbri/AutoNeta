@@ -8,7 +8,7 @@ source('definitions.r')
 ICON_SIZE = '35px'
 
 shinyUI(
-  navbarPage(title = 'AutoNeta - Transformation Mananger',div(img(src="hbp.jpg"), UI_LABELS$TITLE),selected = UI_LABELS$TAB_FILE,
+  navbarPage(title = UI_LABELS$TITLE,selected = UI_LABELS$TAB_FILE,
   
              ###**************************************
              ### File window: save load, exports
