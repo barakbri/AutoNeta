@@ -32,17 +32,16 @@ yuleIndex <- function(x) {
   }
   if (!any(is.numeric(x))) { 
     print("Can't calculate skewness for non-numeric arguments")
-    stop()
+    return(NaN)
   } 
   x <- sort(x)
   l <- length(x)
   ## Return 0 if variable is constant 
   if (length(unique(x)) == 1) {
-    return(0)
+    return(NaN)
   }
   if (l < 4) {
-    print("Can't calculate skewness for a vector of length 3 or less")   
-    stop()
+    return(NaN)
   }
   l_1 <- floor(l / 4)
   m_1 <- mean(x[1:l_1], na.rm = T)
