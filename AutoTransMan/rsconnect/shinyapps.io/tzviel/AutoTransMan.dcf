@@ -1,10 +1,12 @@
 name: AutoTransMan
 title: AutoTransMan
+username:
 account: tzviel
 server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
 appId: 206201
-bundleId: 947277
+bundleId: 1010075
 url: https://tzviel.shinyapps.io/AutoTransMan/
-when: 1503227284.87103
+when: 1507104608.64353
 asMultiple: FALSE
 asStatic: FALSE

@@ -4,7 +4,7 @@
 #This is the land of the creatures known as constants:
 
 #version:
-VERSION_SERVER = '20170815'
+VERSION_SERVER = '20171003'
 
 #This is the list of fields to be loaded, on workspace load
 FIELDS_TO_SAVE_LIST = c('Version_Server','Data_File','Data_FileName','Data_Is_Loaded','Data_Is_Error',
@@ -57,6 +57,7 @@ MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_ABORDER_BODY = "Values for parameters must be 
 MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_TOREVERSE01_TITLE = "Field \'To.Reverse\' must be 0 or 1"
 MSGS$MSG_VARDEF_CHECK_NOT_NUMERIC_TOREVERSE01_BODY = "Values for field \'To.Reverse\' must be 0 or 1 ."
 
+MSGS$MSG_CANNOT_TRANSFORM_TITLE = "Cannot Transform Variable"
 
 
 STATUS_LINE_MSGS = list()
@@ -75,7 +76,7 @@ UI_LABELS$SAVE =   "Save current work space:"
 UI_LABELS$LOAD = "Load previous work space:"
 UI_LABELS$EXPORT = "Export transformed dataset:"
 UI_LABELS$EXPORT_TRANS = "Export Transformation report:"
-UI_LABELS$TITLE = "AutoNeta"
+UI_LABELS$TITLE = 'AutoNeta - Transformation Mananger'
 UI_LABELS$TAB_FILE = "File"
 UI_LABELS$TAB_TRANSFORM = "Transform"
 UI_LABELS$TAB_GENERATE_VARDEF = "Generate Variable Defenition"
