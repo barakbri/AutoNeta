@@ -105,8 +105,13 @@ cumlativeEntropy <- function(x) {
   return(x.new)
 }
 
-## Logit
-logit <- function(x, const = 1 / 3 , b = 1) { 
+## Logit 
+logit <- function(x) { 
+  return(log(x / (1 - x)))
+}
+
+## Logit.b
+logit.b <- function(x, const = 1 / 3 , b = 1) { 
   return(log((x + const) / (b - x + const)))
 }
 
@@ -114,7 +119,7 @@ logit <- function(x, const = 1 / 3 , b = 1) {
 ## Norm Logit 
 norm.logit <- function(x, const = 1 / 3, a = 0, b = 1) { 
   frac.x <- (x - a) / (b - a)
-  return(logit(frac.x, b = b))
+  return(logit.b(frac.x, b = b))
 }
 
 ## Replacing zero with the half the min absolute value of the vector 
@@ -150,7 +155,10 @@ transformList <- function(target.vec,
     transform.list[['inv.sqrt']] <- 1 / sqrt(target.vec.rem.zero)
   }
   if ('logit' %in% transform.vec) { 
-    transform.list[['logit']] <- logit(target.vec, b)
+    transform.list[['logit']] <- logit(traget.vec)
+    }
+  if ('logit.b' %in% transform.vec) { 
+    transform.list[['logit.b']] <- logit.b(target.vec, b)
   }
   if ('logit.norm' %in% transform.vec) { 
     transform.list[['norm.logit']] <- norm.logit(target.vec, a = a, b = b)
@@ -274,49 +282,49 @@ amountFunction <- function(target.vec) {
 
 ## Functions for counts 
 countFunction <- function(target.vec) { 
-  tran.vec <- c('log.sixth', 'inv.sqrt.sixth')
+  tran.vec <- c('log.sixth', 'inv.sqrt.sixth', 'sqrt')
   return(tran.vec)
 }
 
 ## Function for Ratio 
 ratioFunction <- function(target.vec, a, b) { 
-  tran.vec <- c('log', 'tukey.optim')
+  tran.vec <- c('log')
   return(tran.vec)
 }
 
 ## Function for Proportion 
 propFunction <- function() {
-  tran.vec <- c('logit', 'tukey.optim') 
+  tran.vec <- c('logit', 'logit.b') 
   return(tran.vec)
 }
 
 ## Bounded amount function 
 boundedAmountFunc <- function(target.vec, a, b) { 
-  tran.vec <- c('logit.norm', 'frac', 'tukey.optim') 
+  tran.vec <- c('logit.norm', 'frac') 
   return(tran.vec)
 }
 
 ## Bounded Count 
 boundedCountFunc <- function(target.vec, a, b) { 
-  tran.vec <- c('logit.norm', 'frac', 'tukey.optim') 
+  tran.vec <- c('logit.norm', 'frac') 
   return(tran.vec)
 }
 
 ## Ranks  
 ranksFunc <- function(target.vec, a, b) { 
-  tran.vec <- c('logit.norm', 'tukey.optim') 
+  tran.vec <- c('logit.norm', 'frac') 
   return(tran.vec)
 }
 
 ## Ordered Categories 
 orderedCatFunc <- function(target.vec) { 
-  tran.vec <- c('cumulative.entropy', 'tukey.optim') 
+  tran.vec <- c('cumulative.entropy') 
   return(tran.vec)
 }
 
 ## Counted fractions 
 countFracFunction <- function(target.vec, b) { 
-  tran.vec <- c('logit', 'tukey.optim') 
+  tran.vec <- c('logit.b' ,'logit.norm') 
   return(tran.vec)
 }
 
