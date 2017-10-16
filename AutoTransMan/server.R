@@ -169,7 +169,7 @@ shinyServer(function(input, output, session){
        Controller_ComputeList()
        
        #show the top of the before list
-       SystemVariables$BeforeList_IndexSelected = 1
+       #SystemVariables$BeforeList_IndexSelected = 1 #This can be used for resetting the before list after selection to the top item
        SystemVariables$AfterList_IndexSelected = -1
        SystemVariables$BeforeList_HasFocus = T
        SystemVariables$AfterList_HasFocus = F
