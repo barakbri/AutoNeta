@@ -105,6 +105,7 @@ UI_LABELS$LIST_EXCLUDED = " (Excluded)"
 UI_LABELS$EXPORT_DATA_NOT_READY = 'Upload data and var. def.  to allow export'
 UI_LABELS$EXPORT_TRANS_NOT_READY = 'Upload data and var. def.  to allow export'
 UI_LABELS$WORKSPACE_LOADED_NO_UPLOAD = 'Workspace reloaded, refresh to load new data'
+UI_LABELS$TUTORIAL = 'Tutorial'
 
 #UX/UI constants:
 PLOT_HEIGHT = "280px"

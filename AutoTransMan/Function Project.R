@@ -57,8 +57,8 @@ yuleIndex <- function(x) {
 ## Optimize Yule according to tukey ladder 
 
 optimYule <- function(x, ladder = c(-2, -1, -0.5, 0, 0.5, 1, 2)) { 
-  no.sqrt <- any(x < 0) 
-  do.log  <- any(ladder == 0) && !(no.sqrt)
+  no.sqrt <- any(x <= 0, na.rm = TRUE) 
+  do.log  <- any(ladder == 0, na.rm = TRUE) & !(no.sqrt)
   ladder  <- ladder[!(no.sqrt & (abs(round(ladder)) -  abs(ladder)) != 0)] 
   ladder  <- ladder[!(ladder == 0)]
   n <- length(ladder) 
@@ -348,7 +348,7 @@ wrapTypes <- function(target.vec,
   if (type == "Amounts") {
     tran.vec <- amountFunction(target.vec)
   }
-  if (type == "Counts") {
+  if (type %in% c("Counts", "Count", "count", "counts")) {
     tran.vec <- countFunction(target.vec) 
     dens.flag <- FALSE
   }

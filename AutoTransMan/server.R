@@ -171,7 +171,9 @@ shinyServer(function(input, output, session){
        #show the top of the before list
        #SystemVariables$BeforeList_IndexSelected = 1 #This can be used for resetting the before list after selection to the top item
        SystemVariables$AfterList_IndexSelected = -1
-       SystemVariables$BeforeList_HasFocus = T
+       SystemVariables$BeforeList_HasFocus = F
+       if(length(SystemVariables$BeforeList_Labels)>0)  
+        SystemVariables$BeforeList_HasFocus = T
        SystemVariables$AfterList_HasFocus = F
        
        SystemVariables$Variable_Selected = T
@@ -181,9 +183,10 @@ shinyServer(function(input, output, session){
        #select the top item in the before list
        Controller_Update_BeforeList(1)
        Controller_Update_AfterList()
-      
-       #replot
-       Controller_VariableSelected()
+       
+       #replot - but only if there are remaining in the before list
+       if(length(SystemVariables$BeforeList_Labels)>0)
+        Controller_VariableSelected()
       
       SystemVariables$StatusLineString = STATUS_LINE_MSGS$TRANSFORMATION_APPLIED
     }
@@ -509,61 +512,66 @@ shinyServer(function(input, output, session){
     }
     
     SystemVariables$BeforeList_Indices_of_var = ind_before
+    if(length(SystemVariables$BeforeList_Indices_of_var) >= 0){
+      
+    }
     SystemVariables$BeforeList_Labels = colnames(SystemVariables$Data_Original)[ind_before]
     
-    if(length(ind_before)>0)
+    if(length(ind_before)>0){
       for(i in 1:length(ind_before)){
         if(!is.null(SystemVariables$Data_Type[[ SystemVariables$BeforeList_Labels[i] ]])){
           SystemVariables$BeforeList_Labels[i] = paste0(SystemVariables$BeforeList_Labels[i], ', ',SystemVariables$Data_Type[[SystemVariables$BeforeList_Labels[i] ]],' ')    
         }
         
       }
-    
-    #order by yule indexon the before list, if needed
-    if(SystemVariables$BeforeList_OrderBy_Yule == T){
-      #need to do sort
-      before_original_yules = SystemVariables$Original_Yule[ind_before]
-      before_original_yules_order_by = before_original_yules
-      #here we can reorder groups, for example,
-      #show binary variables at the end of the list
       
-      binary_vars = list()
-      for(i in 1:ncol(SystemVariables$Data_Original)){
-        current_name = SystemVariables$Data_Type[[colnames(SystemVariables$Data_Original)[i] ]]
-        if(!is.null(current_name)){
-          if((current_name %in% c("Binary (categories)","Category") |
-               length(unique(SystemVariables$Data_Original[,i]))<=2))
-            binary_vars[[length(binary_vars) + 1]] = i
+      #order by yule indexon the before list, if needed
+      if(SystemVariables$BeforeList_OrderBy_Yule == T){
+        #need to do sort
+        before_original_yules = SystemVariables$Original_Yule[ind_before]
+        before_original_yules_order_by = before_original_yules
+        #here we can reorder groups, for example,
+        #show binary variables at the end of the list
+        
+        binary_vars = list()
+        for(i in 1:ncol(SystemVariables$Data_Original)){
+          current_name = SystemVariables$Data_Type[[colnames(SystemVariables$Data_Original)[i] ]]
+          if(!is.null(current_name)){
+            if((current_name %in% c("Binary (categories)","Category") |
+                length(unique(SystemVariables$Data_Original[,i]))<=2))
+              binary_vars[[length(binary_vars) + 1]] = i
+          }
+        }
+        binary_vars = unlist(binary_vars)
+        
+        #binary_vars = which(SystemVariables$VarDef_type[ind_before] %in%
+        #                      c("Binary (categories)","Category") |
+        #                      abs(abs(before_original_yules) - 1) <= 10^(-4))
+        if(length(binary_vars) > 0)
+          before_original_yules_order_by[binary_vars] = -Inf
+        
+        
+        ord = order(before_original_yules_order_by,decreasing = T)
+        
+        
+        SystemVariables$BeforeList_Indices_of_var = SystemVariables$BeforeList_Indices_of_var[ord]  
+        SystemVariables$BeforeList_Labels = SystemVariables$BeforeList_Labels[ord]
+        before_original_yules = before_original_yules[ord]
+        
+        for(i in 1:length(ord)){
+          SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "( Yule:", round(before_original_yules[i],3),")")  
+        }
+        
+      }
+      
+      #add type - excluded
+      for(i in 1:length(SystemVariables$BeforeList_Labels)){
+        if(SystemVariables$isExcluded[SystemVariables$BeforeList_Indices_of_var[i]]){
+          SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], UI_LABELS$LIST_EXCLUDED)  
         }
       }
-      binary_vars = unlist(binary_vars)
+    } # end of check if ind before is of length >0
       
-      #binary_vars = which(SystemVariables$VarDef_type[ind_before] %in%
-      #                      c("Binary (categories)","Category") |
-      #                      abs(abs(before_original_yules) - 1) <= 10^(-4))
-      if(length(binary_vars) > 0)
-        before_original_yules_order_by[binary_vars] = -Inf
-      
-      
-      ord = order(before_original_yules_order_by,decreasing = T)
-      
-      
-      SystemVariables$BeforeList_Indices_of_var = SystemVariables$BeforeList_Indices_of_var[ord]  
-      SystemVariables$BeforeList_Labels = SystemVariables$BeforeList_Labels[ord]
-      before_original_yules = before_original_yules[ord]
-      
-      for(i in 1:length(ord)){
-          SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "( Yule:", round(before_original_yules[i],3),")")  
-      }
-      
-    }
-    
-    #add type - excluded
-    for(i in 1:length(SystemVariables$BeforeList_Labels)){
-      if(SystemVariables$isExcluded[SystemVariables$BeforeList_Indices_of_var[i]]){
-        SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], UI_LABELS$LIST_EXCLUDED)  
-      }
-    }
     
     
     SystemVariables$AfterList_Indices_of_var = ind_after
@@ -691,8 +699,12 @@ shinyServer(function(input, output, session){
     #note: it could be that a slider, and not lists caused the redraw
     if(SystemVariables$BeforeList_HasFocus & SystemVariables$BeforeList_IndexSelected!=-1){
       SystemVariables$Variable_Selected = T
-      
-      SystemVariables$Variable_Selected_IndexOf = SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]
+      if(SystemVariables$BeforeList_IndexSelected<=length(SystemVariables$BeforeList_Indices_of_var))
+        SystemVariables$Variable_Selected_IndexOf = SystemVariables$BeforeList_Indices_of_var[SystemVariables$BeforeList_IndexSelected]
+      else{
+        SystemVariables$Variable_Selected = F
+        SystemVariables$BeforeList_HasFocus = F
+      }
             
       #remember to zeroize selection on the after list, otherwise we will not bet able to reselect it
       Controller_Update_AfterList()
@@ -749,18 +761,37 @@ shinyServer(function(input, output, session){
     
     # this is where the magic happens:
     if(length(ind_of_var_in_vardef) == 1){
+      #here we check A and B are valid
+      current_a = SystemVariables$VarDef_a[ind_of_var_in_vardef]
+      current_b = SystemVariables$VarDef_b[ind_of_var_in_vardef]
+      if(is.null(current_a) | is.na(current_a) |!is.numeric(current_a)){
+        new_current_a = min(SystemVariables$Data_Original[,ind_selected],na.rm = T)
+        showModal(modalDialog(
+          title = "Invalid a parameter",
+          paste0("Taking a to be minimum of variable: a= ", format(new_current_a, scientific = TRUE, digits = 4))))
+        current_a = new_current_a
+      }
+      
+      if(is.null(current_b) | is.na(current_b) |!is.numeric(current_b)){
+        new_current_b = max(SystemVariables$Data_Original[,ind_selected],na.rm = T)
+        showModal(modalDialog(
+          title = "Invalid a parameter",
+          paste0("Taking a to be maximum of variable: b= ", format(new_current_b, scientific = TRUE, digits = 4))))
+        current_b = new_current_b
+      }
+      #here we call the actual engine
       transformations_obj = tryCatch(
         wrapTypes(
           target.vec = SystemVariables$Data_Original[,ind_selected],
           type = as.character(SystemVariables$VarDef_type[ind_of_var_in_vardef]),
-          a = SystemVariables$VarDef_a[ind_of_var_in_vardef],
-          b = SystemVariables$VarDef_b[ind_of_var_in_vardef],
+          a = current_a,
+          b = current_b,
           to.reverse  = SystemVariables$VarDef_reverse[ind_of_var_in_vardef], 
           bin.width   = bin_type_parameter,
           window.size = kernel_width_parameter,
           var.name    = colnames(SystemVariables$Data_Original)[ind_selected],
           index.type = INDICES_FOR_ASYMMETRY$YULE
-        ),error = function(e){SystemVariables$ErrorLineString = paste0("Error in Transformations",as.character(e));NULL}
+        ),error = function(e){SystemVariables$ErrorLineString = paste0("Error in Transformations: ",as.character(e));NULL}
       )
       if(!is.null(transformations_obj)){
         SystemVariables$ErrorLineString = ''
@@ -938,8 +969,7 @@ shinyServer(function(input, output, session){
   
   #renderer for export data button:
   output$ui_export_trans_data <- renderUI({
-    should_show = SystemVariables$Data_Is_Loaded & SystemVariables$VarDef_Is_Loaded &
-      !SystemVariables$Data_Is_Error & !SystemVariables$VarDef_Is_Error
+    should_show = SystemVariables$Data_Is_Loaded & SystemVariables$VarDef_Is_Loaded
     if(should_show){
       downloadButton("button_Export",UI_LABELS$BUTTON_LABEL_EXPORT_DATA)
     }else{
@@ -950,8 +980,7 @@ shinyServer(function(input, output, session){
   
   #renderer for export transformation button:
   output$ui_export_trans_report <- renderUI({
-    should_show = SystemVariables$Data_Is_Loaded & SystemVariables$VarDef_Is_Loaded &
-      !SystemVariables$Data_Is_Error & !SystemVariables$VarDef_Is_Error
+    should_show = SystemVariables$Data_Is_Loaded & SystemVariables$VarDef_Is_Loaded 
     if(should_show){
       downloadButton("button_ExportTransReport",UI_LABELS$BUTTON_LABEL_EXPORT_TRANS)
     }else{
@@ -1006,7 +1035,7 @@ shinyServer(function(input, output, session){
     
   })
   ###
-  # Click Handlers
+  ## Click Handlers
   ###
   
   # Handle Approve Transformation Selection (handlers_per_button)

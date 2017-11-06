@@ -1,6 +1,8 @@
 
 
 library(shiny)
+if (!require("DT")) install.packages('DT')
+library(DT)
 
 # definitions:
 source('definitions.r')
@@ -115,16 +117,9 @@ shinyUI(
 ###**************************************
 ### Variable Definition window
 ###**************************************
-tabPanel(UI_LABELS$TAB_GENERATE_VARDEF, 
-         sidebarLayout(
-           sidebarPanel(
-             fileInput('file_varGuess', UI_LABELS$UPLOAD_DATA_LABEL,
-                                               accept=c('text/csv', 
-                                                        'text/comma-separated-values,text/plain', 
-                                                        '.csv')),
-             uiOutput("ui_download_generated_vardef"),
-             h4(MSGS$DISCLAIMER)),
-                       mainPanel())),
+tabPanel(UI_LABELS$TUTORIAL, 
+         tags$iframe(style="height:900px; width:100%", src="Tutorial.pdf")
+         ),
 
 
 ###**************************************
