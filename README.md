@@ -4,7 +4,7 @@ The AutoNeta is a R/Shiny application allowing the user to perform transformatio
 
 Tranforming variables such that they are symmetric is used as a preprocessing step before constructing regression models. If variables are skewed and no preprocessing is performed, models built may have large variances for model parameters or poor prediction capability. The leverage of data points will also not be distributed evenly (some observations will have substantially more impact on model parameters than others).
 
-# Sounds great! where to I start?
+# Sounds great! where do I start?
 1. Download the latest version of R and Rstudio from
    https://www.r-project.org/
    and
