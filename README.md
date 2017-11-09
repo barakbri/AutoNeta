@@ -26,4 +26,3 @@ We are always glad to help.
 We are available at Tzviel Frostig, <tfrostig at gmail dot com> and Barak Brill, <barakbri at mail dot tau dot ac dot il>.
 You can also report issues via the following link:
 https://github.com/barakbri/AutoNeta/issues
-
