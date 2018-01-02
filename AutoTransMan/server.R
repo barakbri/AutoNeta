@@ -559,16 +559,17 @@ shinyServer(function(input, output, session){
         before_original_yules = before_original_yules[ord]
         
         for(i in 1:length(ord)){
-          SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "( Yule:", round(before_original_yules[i],3),")")  
+          SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], "(Abs. Yule:", round(before_original_yules[i],3),")")  
         }
         
       }
       
       #add type - excluded
       for(i in 1:length(SystemVariables$BeforeList_Labels)){
-        if(SystemVariables$isExcluded[SystemVariables$BeforeList_Indices_of_var[i]]){
-          SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], UI_LABELS$LIST_EXCLUDED)  
-        }
+        if(!is.na(SystemVariables$BeforeList_Indices_of_var[i]))
+          if(SystemVariables$isExcluded[SystemVariables$BeforeList_Indices_of_var[i]]){
+            SystemVariables$BeforeList_Labels[i]  = paste0(SystemVariables$BeforeList_Labels[i], UI_LABELS$LIST_EXCLUDED)  
+          }
       }
     } # end of check if ind before is of length >0
       
@@ -593,7 +594,7 @@ shinyServer(function(input, output, session){
         SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i],
                                                      ' - ',
                                                      SystemVariables$Transformation_Used[ind_of_var],
-                                                     ' (Yule: ',
+                                                     ' (Abs Yule -> Yule: ',
                                                      round(SystemVariables$Original_Yule[ind_of_var],3),
                                                      ' -> ',
                                                      round(SystemVariables$New_Yule[ind_of_var],3),')')
