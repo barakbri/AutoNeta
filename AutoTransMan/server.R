@@ -594,7 +594,7 @@ shinyServer(function(input, output, session){
         SystemVariables$AfterList_Labels[i] = paste0(SystemVariables$AfterList_Labels[i],
                                                      ' - ',
                                                      SystemVariables$Transformation_Used[ind_of_var],
-                                                     ' (Abs Yule -> Yule: ',
+                                                     ' (Abs. Yule -> Yule: ',
                                                      round(SystemVariables$Original_Yule[ind_of_var],3),
                                                      ' -> ',
                                                      round(SystemVariables$New_Yule[ind_of_var],3),')')
@@ -870,6 +870,23 @@ shinyServer(function(input, output, session){
     }
   )
   
+  output$button_Template <- downloadHandler(
+    filename = function() {
+      paste("Template", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      if(!SystemVariables$Data_Is_Loaded){
+        showModal(modalDialog(
+          title = MSGS$MSG_CANNOT_TEMPLATE_TITLE,
+          MSGS$MSG_CANNOT_TEMPLATE_BODY
+        ))
+      }else{
+        write.csv(TemplateMaker(SystemVariables$Data_Original), file = file,quote = F,row.names = F)  
+      }
+      
+    }
+  )
+  
   output$button_ExportTransReport <- downloadHandler(
     filename = function() {
       paste("trans-report-", Sys.Date(), ".csv", sep="")
@@ -975,6 +992,17 @@ shinyServer(function(input, output, session){
       downloadButton("button_Export",UI_LABELS$BUTTON_LABEL_EXPORT_DATA)
     }else{
       h4(UI_LABELS$EXPORT_DATA_NOT_READY)
+    }
+    
+  })
+  
+  #renderer for template button
+  output$ui_export_template <- renderUI({
+    should_show = SystemVariables$Data_Is_Loaded 
+    if(should_show){
+      downloadButton("button_Template",UI_LABELS$BUTTON_LABEL_TEMPLATE)
+    }else{
+      h4(UI_LABELS$TEMPLATE_NOT_READY)
     }
     
   })

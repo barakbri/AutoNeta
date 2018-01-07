@@ -281,7 +281,7 @@ amountFunction <- function(target.vec) {
 
 ## Functions for counts 
 countFunction <- function(target.vec) { 
-  tran.vec <- c('log.sixth', 'inv.sqrt.sixth', 'sqrt')
+  tran.vec <- c('log.sixth', 'inv.sqrt.sixth', 'sqrt', 'tukey.optim')
   return(tran.vec)
 }
 
@@ -482,6 +482,20 @@ WrapGuess <- function(file) {
 
 ###########################
 
+
+# Create Template  --------------------------------------------------------
+
+## Creating Template 
+TemplateMaker <- function(file) { 
+  p         <- ncol(file) 
+  name.vec  <- colnames(file)  
+  temp.dat <- data.frame('Variable' = name.vec, 
+                          'a' = rep(NA ,p), 
+                          'b' = rep(NA ,p), 
+                          'Type' = rep(NA ,p), 
+                          'To.Reverse' = rep(0 ,p))  
+  return(temp.dat) 
+}
 ###########################
 # Checking  ---------------------------------------------------------------
 # wrapTypes(target.vec = rbinom(100, 1,0.5), type = "Binary (categories)", bin.width = 0.1,var.name = 'Tzvikush', to.reverse = TRUE)

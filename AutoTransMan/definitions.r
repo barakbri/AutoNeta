@@ -33,6 +33,8 @@ MSGS$MSG_CANNOT_EXPORT_TITLE = "Cannot Export Data"
 MSGS$MSG_CANNOT_EXPORT_BODY = "Cannot Export Data - No Data Has Been Loaded"
 MSGS$MSG_CANNOT_DOWNLOAD_TITLE = "Cannot Download VarType Estimation"
 MSGS$MSG_CANNOT_DOWNLOAD_BODY = "Cannot Download VarType Estimation - No Data Was Uploaded"
+MSGS$MSG_CANNOT_TEMPLATE_TITLE = "Cannot Download Template"
+MSGS$MSG_CANNOT_TEMPLATE_BODY = "Cannot Export Template - No Data Has Been Loaded"
 MSGS$DISCLAIMER = "Note: The suggested variable types are in the sole responsability of the user, and require their discretion. Please consult the user manual for the meaning of each variable type definition."
 
 MSGS$MSG_VAR_NOT_IN_VARDEF_TITLE = "Cannot display variable"
@@ -79,16 +81,20 @@ UI_LABELS$EXPORT_TRANS = "Export Transformation report:"
 UI_LABELS$TITLE = 'AutoNeta - Transformation Mananger'
 UI_LABELS$TAB_FILE = "File"
 UI_LABELS$TAB_TRANSFORM = "Transform"
+UI_LABELS$TEMPLATE = "Template Of Variable Defenition:"
 UI_LABELS$TAB_GENERATE_VARDEF = "Generate Variable Defenition"
 UI_LABELS$UPLOAD_VARDEF_LABEL = 'Choose variable definitions CSV file'
 UI_LABELS$UPLOAD_DATA_LABEL = 'Choose Data CSV file'
 UI_LABELS$SORT_BY_YULE = "Sort by Yule (Binary Categories appear last)"
 
+
 UI_LABELS$BUTTON_LABEL_SAVE = "Save"
 UI_LABELS$BUTTON_LABEL_LOAD = ""
 UI_LABELS$BUTTON_LABEL_EXPORT_DATA = "Export Transformed Data"
 UI_LABELS$BUTTON_LABEL_EXPORT_TRANS = "Transformation Report"
+UI_LABELS$BUTTON_LABEL_TEMPLATE = "Download Template"
 UI_LABELS$BUTTON_LABEL_APPLY_TRANSFORMATION = "Apply Transformation"
+
 
 UI_LABELS$SLIDER_BIN_SIZE = "Bin Size: (Scale is 0-2)"
 UI_LABELS$SLIDER_KDE_WIDTH = "KDE Width: (Scale is 0-2)"
@@ -104,6 +110,7 @@ UI_LABELS$LIST_EXCLUDED = " (Excluded)"
 
 UI_LABELS$EXPORT_DATA_NOT_READY = 'Upload data and var. def.  to allow export'
 UI_LABELS$EXPORT_TRANS_NOT_READY = 'Upload data and var. def.  to allow export'
+UI_LABELS$TEMPLATE_NOT_READY = 'Upload data to allow creation of template'
 UI_LABELS$WORKSPACE_LOADED_NO_UPLOAD = 'Workspace reloaded, refresh to load new data'
 UI_LABELS$TUTORIAL = 'Tutorial'
 

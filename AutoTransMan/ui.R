@@ -40,7 +40,10 @@ shinyUI(
                             #fluidRow(HTML('</br>')),
                             
                             fluidRow(column(1,img(src="checklist.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
-                                     column(10,h4(UI_LABELS$EXPORT_TRANS,style="padding:20px;"),uiOutput('ui_export_trans_report')))
+                                     column(10,h4(UI_LABELS$EXPORT_TRANS,style="padding:20px;"),uiOutput('ui_export_trans_report'))),
+                            
+                            fluidRow(column(1,img(src="upload.png",height = ICON_SIZE,width = ICON_SIZE,style="margin-top: 25px;display: block; margin-left: auto; margin-right: auto;")),
+                                   column(10,h4(UI_LABELS$TEMPLATE,style="padding:20px;vertical-align:center;"), uiOutput('ui_export_template')))
                           )  
                         ),
                         
