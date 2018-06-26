@@ -56,7 +56,7 @@ yuleIndex <- function(x) {
 
 ## Optimize Yule according to tukey ladder 
 
-optimYule <- function(x, ladder = c(-2, -1, -0.5, 0, 0.5, 1, 2)) { 
+optimYule <- function(x, ladder = c( -2, -1, -2/3, -1/2, -1/3, 0, 1/3,  1/2, 2/3, 1, 2)) { 
   no.sqrt <- any(x <= 0, na.rm = TRUE) 
   do.log  <- any(ladder == 0, na.rm = TRUE) & !(no.sqrt)
   ladder  <- ladder[!(no.sqrt & (abs(round(ladder)) -  abs(ladder)) != 0)] 
