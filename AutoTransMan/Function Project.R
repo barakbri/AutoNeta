@@ -182,8 +182,8 @@ transformList <- function(target.vec,
   }
   if ('tukey.optim' %in% transform.vec) { 
     optim.yule <- optimYule(target.vec)
-    transform.list[[paste0('optim.yule.power.', optim.yule[1])]] <- target.vec ^ optim.yule[1]
-    }
+    transform.list[[paste0('optim.yule.power.', round(optim.yule[1], 3)]] <- target.vec ^ optim.yule[1] 
+    } 
   return(transform.list)
 }
 
